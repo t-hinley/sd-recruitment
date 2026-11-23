@@ -4,7 +4,8 @@ from pathlib import Path
 from django import forms
 from django.conf import settings
 
-from .models import INDUSTRY_CHOICES, CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
+from .models import (CANDIDATE_INDUSTRIES, EMPLOYER_INDUSTRIES, EMPLOYMENT_TYPES, EXPERIENCE_LEVELS,
+                     VACANCY_COUNTS, VISA_TYPES, CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry)
 
 PHONE_RE = re.compile(r"^[0-9 +()\-]{8,20}$")
 
@@ -41,40 +42,60 @@ def _choices(placeholder, choices):
     return [("", placeholder)] + list(choices)
 
 
+def employment_type_field():
+    return forms.MultipleChoiceField(
+        label="Employment type", required=False, choices=EMPLOYMENT_TYPES,
+        widget=forms.CheckboxSelectMultiple, help_text="Choose all that apply.",
+    )
+
+
 class VacancyForm(HoneypotMixin, forms.ModelForm):
+    """Same fields, options and required fields as the Airtable Employer Enquiry Form."""
+
     prefix = "vacancy"
+    employment_types = employment_type_field()
 
     class Meta:
         model = VacancyEnquiry
         fields = [
-            "contact_name", "company", "email", "phone", "industry", "position",
-            "positions_count", "employment_type", "location", "start_timeframe", "details",
+            "company", "industry", "contact_name", "phone", "email", "position",
+            "employment_types", "positions_count", "location", "details", "consent",
         ]
+        labels = {
+            "company": "Company name",
+            "industry": "Industry / sector",
+            "contact_name": "Contact person",
+            "phone": "Mobile number",
+            "position": "Position recruiting for",
+            "positions_count": "Number of vacancies",
+            "details": "Additional requirements or comments",
+        }
         widgets = {
-            "contact_name": forms.TextInput(attrs={"autocomplete": "name"}),
             "company": forms.TextInput(attrs={"autocomplete": "organization"}),
-            "email": forms.EmailInput(attrs={"autocomplete": "email", "placeholder": "you@business.com.au"}),
+            "contact_name": forms.TextInput(attrs={"autocomplete": "name"}),
             "phone": forms.TextInput(attrs={"autocomplete": "tel", "inputmode": "tel", "placeholder": "04xx xxx xxx"}),
-            "position": forms.TextInput(attrs={"placeholder": "e.g. Restaurant Manager"}),
-            "positions_count": forms.NumberInput(attrs={"min": 1, "max": 99}),
+            "email": forms.EmailInput(attrs={"autocomplete": "email", "placeholder": "you@business.com.au"}),
+            "position": forms.TextInput(attrs={"placeholder": "e.g. Support Worker, Chef, Site Supervisor"}),
             "location": forms.TextInput(attrs={"placeholder": "Suburb and state"}),
-            "start_timeframe": forms.TextInput(attrs={"placeholder": "e.g. As soon as possible, or early March"}),
-            "details": forms.Textarea(attrs={"rows": 4, "placeholder": "Key duties, experience needed, hours, pay range – whatever helps us understand the role"}),
+            "details": forms.Textarea(attrs={"rows": 4, "placeholder": "Experience, licences, shifts, start date, pay range – anything that helps"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["industry"].choices = _choices("Select an industry", INDUSTRY_CHOICES)
-        self.fields["employment_type"].choices = _choices("Select type", VacancyEnquiry.EMPLOYMENT_TYPES)
-        self.fields["positions_count"].min_value = 1
-        self.fields["positions_count"].max_value = 99
+        self.fields["industry"].choices = _choices("Select an industry", EMPLOYER_INDUSTRIES)
+        self.fields["positions_count"].choices = _choices("Select", VACANCY_COUNTS)
+        self.fields["consent"].label = ("I agree to be contacted by SD Recruitment regarding my recruitment "
+                                        "enquiry using the contact details provided.")
 
 
 class CandidateForm(HoneypotMixin, forms.ModelForm):
+    """The Airtable Talent Registration Form fields, plus support requested, CV and consent."""
+
     prefix = "candidate"
 
+    employment_types = employment_type_field()
     support = forms.MultipleChoiceField(
-        label="Support requested",
+        label="What can we help with?",
         choices=CandidateRegistration.SUPPORT_CHOICES,
         widget=forms.CheckboxSelectMultiple,
         error_messages={"required": "Please choose at least one option."},
@@ -90,21 +111,33 @@ class CandidateForm(HoneypotMixin, forms.ModelForm):
     class Meta:
         model = CandidateRegistration
         fields = [
-            "full_name", "email", "phone", "location", "position_sought", "industry",
-            "experience", "resume", "job", "consent",
+            "full_name", "phone", "email", "location", "visa_type", "preferred_location", "industry",
+            "position_sought", "employment_types", "experience", "resume", "job", "consent",
         ]
+        labels = {
+            "full_name": "Full name",
+            "location": "Country / location",
+            "industry": "Industry / job category",
+        }
+        help_texts = {
+            "visa_type": "Your current visa type or residency status in Australia. "
+                         "If you are applying from overseas, select “Offshore Applicant / Unsure”.",
+            "position_sought": "e.g. Support Worker, Registered Nurse, Chef or Warehouse Assistant.",
+        }
         widgets = {
             "full_name": forms.TextInput(attrs={"autocomplete": "name"}),
-            "email": forms.EmailInput(attrs={"autocomplete": "email", "placeholder": "you@email.com"}),
             "phone": forms.TextInput(attrs={"autocomplete": "tel", "inputmode": "tel", "placeholder": "04xx xxx xxx"}),
-            "location": forms.TextInput(attrs={"placeholder": "Suburb and state"}),
-            "position_sought": forms.TextInput(attrs={"placeholder": "e.g. Chef, Aged Care Worker, Site Supervisor"}),
-            "experience": forms.Textarea(attrs={"rows": 4, "placeholder": "Recent roles, years of experience, licences, certificates or qualifications"}),
+            "email": forms.EmailInput(attrs={"autocomplete": "email", "placeholder": "you@email.com"}),
+            "location": forms.TextInput(attrs={"placeholder": "e.g. Perth WA, or Manila, Philippines"}),
+            "preferred_location": forms.TextInput(attrs={"placeholder": "e.g. Perth metro, regional WA, anywhere"}),
+            "position_sought": forms.Textarea(attrs={"rows": 2}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["industry"].choices = _choices("Select an industry", INDUSTRY_CHOICES)
+        self.fields["visa_type"].choices = _choices("Select your visa type", VISA_TYPES)
+        self.fields["industry"].choices = _choices("Select an industry", CANDIDATE_INDUSTRIES)
+        self.fields["experience"].choices = _choices("Select", EXPERIENCE_LEVELS)
         self.fields["job"].queryset = Job.objects.filter(is_published=True)
         exts = ", ".join(f".{e}" for e in settings.RESUME_EXTENSIONS)
         self.fields["resume"].widget.attrs["accept"] = exts

@@ -183,6 +183,9 @@ class SDAdminSite(admin.AdminSite):
             ("Live opportunities", Job.objects.filter(is_published=True).count(), "job", "pink",
              job_url + "?is_published__exact=1", ""),
             ("Unassigned (open)", unassigned, "group", "amber", cand_url + "?assigned=none", ""),
+            ("Airtable send failures", cands.filter(airtable_status="failed").count()
+             + vacs.filter(airtable_status="failed").count(), "alert", "red",
+             cand_url + "?airtable_status__exact=failed", "bad"),
             ("Received this month", sum(qs.filter(created_at__date__gte=month_start).count()
                                         for qs in (cands, vacs, contacts)), "calendar", "amber", cand_url, ""),
         ]
@@ -194,14 +197,15 @@ class SDAdminSite(admin.AdminSite):
         by_vstatus = dict(vacs.values_list("status").annotate(n=Count("id")))
         vac_status_rows = bars([(label, by_vstatus.get(v, 0)) for v, label in VacancyEnquiry.STATUSES])
 
-        # Activity by industry: candidates and vacancies side by side.
-        from .models import INDUSTRY_CHOICES
+        # Activity by industry: candidates and vacancies side by side (the two Airtable forms use
+        # slightly different industry names, so each row links to whichever list uses that name).
+        from .models import CANDIDATE_INDUSTRIES, EMPLOYER_INDUSTRIES
         c_ind = dict(cands.values_list("industry").annotate(n=Count("id")))
         v_ind = dict(vacs.values_list("industry").annotate(n=Count("id")))
         v_open = dict(open_(vacs).values_list("industry").annotate(n=Count("id")))
-        industry_rows = [{"label": label, "filter": slug, "cands": c_ind.get(slug, 0), "vacs": v_ind.get(slug, 0),
-                          "open": v_open.get(slug, 0)} for slug, label in INDUSTRY_CHOICES
-                         if c_ind.get(slug) or v_ind.get(slug)]
+        names = list(dict.fromkeys([v for v, _ in CANDIDATE_INDUSTRIES] + [v for v, _ in EMPLOYER_INDUSTRIES]))
+        industry_rows = [{"label": name, "filter": name, "cands": c_ind.get(name, 0), "vacs": v_ind.get(name, 0),
+                          "open": v_open.get(name, 0)} for name in names if c_ind.get(name) or v_ind.get(name)]
 
         support = cands.aggregate(**{key: Count("id", filter=Q(**{f"support_{key}": True}))
                                      for key, _ in CandidateRegistration.SUPPORT_CHOICES})
@@ -210,8 +214,8 @@ class SDAdminSite(admin.AdminSite):
         for r in support_rows:
             r["url"] = support_links[r["label"]]
 
-        recent = [{"name": e.full_name, "email": e.email, "kind": "Candidate · " + e.position_sought,
-                   "message": e.experience, "status": e.status, "status_label": e.get_status_display(),
+        recent = [{"name": e.full_name, "email": e.email, "kind": "Candidate · " + e.industry,
+                   "message": e.position_sought, "status": e.status, "status_label": e.get_status_display(),
                    "when": e.created_at, "url": reverse("admin:core_candidateregistration_change", args=[e.pk])}
                   for e in cands[:6]]
         recent += [{"name": e.company, "email": e.email, "kind": "Vacancy · " + e.position, "message": e.details,

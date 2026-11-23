@@ -151,3 +151,7 @@ div.breadcrumbs { padding: 12px 40px; }
 .sd-shell fieldset.module .description{background:#FFF7F3;border-left:3px solid var(--accent);color:#55627D;padding:10px 14px;margin:0}
 .sd-shell fieldset.module{background:#fff;border:1px solid var(--hairline-color);border-radius:14px;overflow:hidden;margin-bottom:18px}
 
+
+/* Airtable copy status */
+.sdsync{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap}
+.sdsync.ok{background:#DDF6EC;color:#16996B}.sdsync.bad{background:#FDE7E7;color:#D14343}.sdsync.wait{background:#EEF0F5;color:#4A5468}

@@ -1,0 +1,13 @@
+<fieldset class="field field--wide choice-field{% if field.errors %} field--error{% endif %}">
+  <legend class="field__label">{{ field.label }}{% if field.field.required %} <span class="req" aria-hidden="true">*</span>{% else %} <span class="opt">(optional{% if field.help_text %} – {{ field.help_text|lower|cut:"." }}{% endif %})</span>{% endif %}</legend>
+  <div class="choice-grid choice-grid--{{ cols|default:3 }}">
+    {% for opt in field %}
+    <label class="choice choice--sm" for="{{ opt.id_for_label }}">
+      {{ opt.tag }}
+      <span class="choice__box" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></span>
+      <span class="choice__label">{{ opt.choice_label }}</span>
+    </label>
+    {% endfor %}
+  </div>
+  {% for error in field.errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+</fieldset>

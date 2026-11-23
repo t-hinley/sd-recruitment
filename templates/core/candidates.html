@@ -154,18 +154,21 @@
           <legend>Your details</legend>
           <div class="field-grid">
             {% include "includes/field.html" with field=form.full_name wide=True %}
-            {% include "includes/field.html" with field=form.email %}
             {% include "includes/field.html" with field=form.phone %}
-            {% include "includes/field.html" with field=form.location wide=True %}
+            {% include "includes/field.html" with field=form.email %}
+            {% include "includes/field.html" with field=form.location %}
+            {% include "includes/field.html" with field=form.visa_type %}
           </div>
         </fieldset>
 
         <fieldset>
           <legend>The work you're looking for</legend>
           <div class="field-grid">
-            {% include "includes/field.html" with field=form.position_sought %}
             {% include "includes/field.html" with field=form.industry %}
-            {% include "includes/field.html" with field=form.experience wide=True %}
+            {% include "includes/field.html" with field=form.preferred_location %}
+            {% include "includes/field.html" with field=form.position_sought wide=True %}
+            {% include "includes/choice_group.html" with field=form.employment_types cols=3 %}
+            {% include "includes/field.html" with field=form.experience %}
           </div>
           <div class="field field--wide{% if form.resume.errors %} field--error{% endif %}">
             <span class="field__label" id="resume-label">{{ form.resume.label }} <span class="opt">(optional)</span></span>

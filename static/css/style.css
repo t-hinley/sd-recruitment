@@ -244,6 +244,7 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field--wide { grid-column: 1 / -1; }
+.field-grid + .field { margin-top: 16px; }
 .field label, .field__label { font-weight: 600; font-size: .93rem; color: var(--blue-ink); }
 .req { color: var(--orange-strong); }
 .opt { color: var(--muted); font-weight: 400; font-size: .86rem; }
@@ -264,6 +265,11 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
 /* Checkbox / radio cards */
 .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .choice-grid--3 { grid-template-columns: repeat(3, 1fr); }
+.choice-field { border: 0; margin: 0; padding: 0; }
+.choice-field legend { margin-bottom: 8px; font-size: .93rem; }
+.choice--sm { padding: 10px 12px; font-size: .9rem; }
+.choice--sm .choice__box { width: 20px; height: 20px; }
+.field--error .choice { border-color: #D92D20; }
 .choice { position: relative; display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 1.5px solid #CDD5E5; border-radius: 10px; cursor: pointer; background: #fff; color: var(--blue-ink); font-weight: 600; font-size: .95rem; line-height: 1.35; transition: border-color .15s, background-color .15s; }
 .choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .choice__box { display: grid; place-items: center; width: 22px; height: 22px; flex: none; border: 2px solid #AEB8CF; border-radius: 6px; background: #fff; color: #fff; transition: background-color .15s, border-color .15s; }
@@ -391,7 +397,8 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
   .page-hero__lead { font-size: 1.06rem; }
   .page-hero__actions .btn { flex: 1 1 100%; }
   .form-card { padding: 24px 18px; border-radius: var(--radius); }
-  .field-grid, .choice-grid, .choice-grid--3 { grid-template-columns: 1fr; }
+  .field-grid, .choice-grid { grid-template-columns: 1fr; }
+  .choice-grid--3 { grid-template-columns: 1fr 1fr; }
   .job { flex-direction: column; align-items: flex-start; padding: 20px; }
   .empty-state { flex-direction: column; padding: 22px; }
   .contact-prompt__actions { width: 100%; }

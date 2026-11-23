@@ -10,10 +10,11 @@ from .models import CandidateRegistration, ContactEnquiry, VacancyEnquiry
 logger = logging.getLogger(__name__)
 
 FIELDS = {
-    VacancyEnquiry: ("New vacancy", ["contact_name", "company", "email", "phone", "industry", "position",
-                                    "positions_count", "employment_type", "location", "start_timeframe", "details"]),
-    CandidateRegistration: ("New candidate registration", ["full_name", "email", "phone", "location",
-                                                          "position_sought", "industry", "job", "experience"]),
+    VacancyEnquiry: ("New vacancy", ["company", "industry", "contact_name", "phone", "email", "position",
+                                    "employment_types", "positions_count", "location", "details", "consent"]),
+    CandidateRegistration: ("New candidate registration", ["full_name", "phone", "email", "location", "visa_type",
+                                                          "preferred_location", "industry", "position_sought",
+                                                          "employment_types", "experience", "job"]),
     ContactEnquiry: ("New contact enquiry", ["name", "email", "phone", "enquirer_type", "message"]),
 }
 
@@ -21,6 +22,10 @@ FIELDS = {
 def _value(obj, field):
     display = getattr(obj, f"get_{field}_display", None)
     value = display() if display else getattr(obj, field)
+    if isinstance(value, list):
+        value = ", ".join(value)
+    if isinstance(value, bool):
+        value = "Yes" if value else "No"
     return value if value not in (None, "") else "-"
 
 
@@ -28,7 +33,7 @@ def _subject(obj):
     if isinstance(obj, VacancyEnquiry):
         return f"New vacancy: {obj.position} – {obj.company}"
     if isinstance(obj, CandidateRegistration):
-        return f"New candidate: {obj.full_name} – {obj.position_sought}"
+        return f"New candidate: {obj.full_name} – {obj.industry}"
     return f"New website enquiry from {obj.name}"
 
 
@@ -55,7 +60,7 @@ def send_enquiry_notification(obj, request=None):
             body="\n".join(lines),
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=settings.ENQUIRY_NOTIFICATION_EMAILS,
-            reply_to=[obj.email],
+            reply_to=[obj.email] if obj.email else None,
         ).send()
         return True
     except Exception:  # pragma: no cover - depends on mail server

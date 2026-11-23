@@ -15,15 +15,33 @@ def tearDownModule():
     shutil.rmtree(MEDIA, ignore_errors=True)
 
 
+VACANCY = {
+    "vacancy-company": "Cafe Co",
+    "vacancy-industry": "Hospitality",
+    "vacancy-contact_name": "Sam Lee",
+    "vacancy-phone": "0411 111 111",
+    "vacancy-email": "sam@cafe.com.au",
+    "vacancy-position": "Restaurant Manager",
+    "vacancy-employment_types": ["Full Time", "Casual"],
+    "vacancy-positions_count": "2-5",
+    "vacancy-location": "Fremantle WA",
+    "vacancy-details": "Busy venue.",
+    "vacancy-consent": "on",
+}
+
+
 def candidate_data(**extra):
     data = {
         "candidate-full_name": "Jane Citizen",
         "candidate-email": "jane@example.com",
         "candidate-phone": "0400 000 000",
         "candidate-location": "Perth WA",
-        "candidate-position_sought": "Aged Care Worker",
-        "candidate-industry": "healthcare",
-        "candidate-experience": "Cert III in Individual Support",
+        "candidate-visa_type": "Student Visa (Subclass 500)",
+        "candidate-preferred_location": "Perth metro",
+        "candidate-industry": "Aged Care & Disability",
+        "candidate-position_sought": "Support Worker",
+        "candidate-employment_types": ["Casual", "Part - Time"],
+        "candidate-experience": "1–3 Years",
         "candidate-support": ["jobs", "interview"],
         "candidate-consent": "on",
     }
@@ -90,13 +108,13 @@ class SiteTests(TestCase):
         self.assertNotRegex(r.content.decode(), r'name="candidate-support"[^>]*checked')
 
     def test_industry_link_preselects_vacancy_industry(self):
-        r = self.client.get(reverse("core:employers") + "?industry=education")
-        self.assertContains(r, '<option value="education" selected>')
+        r = self.client.get(reverse("core:employers") + "?industry=construction")
+        self.assertContains(r, '<option value="Construction &amp; Trades" selected>')
 
     def test_jobs_listed_and_apply_preselects(self):
-        job = Job.objects.create(title="Head Chef", industry="hospitality", location="Perth WA",
+        job = Job.objects.create(title="Head Chef", industry="Hospitality & Tourism", location="Perth WA",
                                  summary="Lead a busy kitchen.")
-        Job.objects.create(title="Hidden Role", industry="healthcare", location="Perth", summary="x",
+        Job.objects.create(title="Hidden Role", industry="Healthcare & Nursing", location="Perth", summary="x",
                            is_published=False)
         r = self.client.get(reverse("core:candidates"))
         self.assertContains(r, "Head Chef")
@@ -108,27 +126,35 @@ class SiteTests(TestCase):
         self.assertEqual(CandidateRegistration.objects.get().job, job)
 
     def test_vacancy_saves_and_emails(self):
-        r = self.client.post(reverse("core:employers"), {
-            "vacancy-contact_name": "Sam Lee",
-            "vacancy-company": "Cafe Co",
-            "vacancy-email": "sam@cafe.com.au",
-            "vacancy-phone": "0411 111 111",
-            "vacancy-industry": "hospitality",
-            "vacancy-position": "Restaurant Manager",
-            "vacancy-positions_count": "1",
-            "vacancy-employment_type": "full-time",
-            "vacancy-location": "Fremantle WA",
-            "vacancy-start_timeframe": "ASAP",
-            "vacancy-details": "Busy venue.",
-        })
+        r = self.client.post(reverse("core:employers"), VACANCY)
         self.assertRedirects(r, reverse("core:employers") + "?sent=1#vacancy", fetch_redirect_response=False)
         v = VacancyEnquiry.objects.get()
         self.assertEqual(v.status, "new")
+        self.assertEqual(v.employment_types, ["Full Time", "Casual"])
+        self.assertTrue(v.consent)
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("Restaurant Manager", mail.outbox[0].subject)
         self.assertEqual(mail.outbox[0].reply_to, ["sam@cafe.com.au"])
         follow = self.client.get(reverse("core:employers") + "?sent=1")
         self.assertContains(follow, "Vacancy received")
+
+    def test_forms_use_airtable_fields_and_options(self):
+        r = self.client.get(reverse("core:employers"))
+        for text in ("Company name", "Industry / sector", "Contact person", "Mobile number",
+                     "Position recruiting for", "Number of vacancies", "Work location",
+                     "Additional requirements or comments", "Aged Care &amp; Disability", "More than 10",
+                     "Temporary / Contract", "I agree to be contacted by SD Recruitment"):
+            self.assertContains(r, text)
+        r = self.client.get(reverse("core:candidates"))
+        for text in ("Country / location", "Visa type", "Preferred job location", "Industry / job category",
+                     "Position(s) interested in", "Relevant work experience", "Offshore Applicant / Unsure",
+                     "Cleaning &amp; Maintenance", "More than 5 Years", "Working Holiday / Work and Holiday Visa"):
+            self.assertContains(r, text)
+
+    def test_vacancy_required_fields_match_airtable(self):
+        r = self.client.post(reverse("core:employers"), {"vacancy-company": ""})
+        form = r.context["form"]
+        self.assertEqual(set(form.errors), {"company", "industry", "phone", "position"})
 
     def test_candidate_registration_without_cv(self):
         r = self.client.post(reverse("core:candidates"), candidate_data())

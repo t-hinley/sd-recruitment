@@ -186,12 +186,25 @@ Back up the database **and** the CVs together, e.g. weekly:
 tar czf ~/sdrecruitment-backup-$(date +%F).tar.gz -C /srv/sdrecruitment db.sqlite3 private_media
 ```
 
+## Step 10b – Airtable
+
+1. Create a token at <https://airtable.com/create/tokens>: scope **data.records:write**, access
+   **SD Recruitment** base only. Copy it.
+2. `nano /srv/sdrecruitment/.env` and set `AIRTABLE_TOKEN=<the token>` (the base and table IDs are
+   already filled in).
+3. `sudo systemctl restart sdrecruitment`
+4. Send anything saved before Airtable was switched on: `cd /srv/sdrecruitment && .venv/bin/python manage.py sync_airtable`
+5. Automatic retry every 15 minutes: run `crontab -e`, add this line at the bottom and save:
+   ```
+   */15 * * * * cd /srv/sdrecruitment && .venv/bin/python manage.py sync_airtable >/dev/null 2>&1
+   ```
+
 ## Step 11 – Final checks
 
 - [ ] https://recruitment.example.com.au opens with a padlock on desktop and phone.
 - [ ] `https://www.recruitment.example.com.au` also opens with a padlock.
 - [ ] Submit a vacancy, register a candidate **with a PDF CV**, and send a contact message →
-      "Thank you" → notification emails arrive.
+      "Thank you" → notification emails arrive → both rows appear in Airtable.
 - [ ] In the admin, open the candidate and click **Download CV**.
 - [ ] Add a test job under **Current opportunities** → it appears on the Candidates page → untick
       "Show on website" and it disappears.

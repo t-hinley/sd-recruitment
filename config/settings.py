@@ -185,6 +185,15 @@ RESUME_EXTENSIONS = ["pdf", "doc", "docx", "rtf", "odt", "txt"]
 FILE_UPLOAD_PERMISSIONS = 0o640
 
 # ---------------------------------------------------------------------------
+# Airtable: a copy of each vacancy and candidate registration goes to the SD Recruitment base
+# (core/airtable.py). Leave AIRTABLE_TOKEN empty to switch it off.
+# ---------------------------------------------------------------------------
+AIRTABLE_TOKEN = os.environ.get("AIRTABLE_TOKEN", "")
+AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "appv3PA1WBgRGxeX5").strip()
+AIRTABLE_TABLE = os.environ.get("AIRTABLE_TABLE", "tblZaBP5px3dqWuaD").strip()
+AIRTABLE_TIMEOUT = int(os.environ.get("AIRTABLE_TIMEOUT", "8"))
+
+# ---------------------------------------------------------------------------
 # Production security
 # ---------------------------------------------------------------------------
 if not DEBUG:

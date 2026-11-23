@@ -9,12 +9,18 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
 
-from . import content
+from . import airtable, content
 from .forms import CandidateForm, ContactForm, VacancyForm
 from .models import CandidateRegistration, Job
 from .notifications import send_enquiry_notification
 
 SERVICE_KEYS = {key for key, _label in CandidateRegistration.SUPPORT_CHOICES}
+# Employers page industry cards -> Airtable "Industry / Sector" option.
+INDUSTRY_PRESELECT = {
+    "healthcare": "Healthcare",
+    "hospitality": "Hospitality",
+    "construction": "Construction & Trades",
+}
 
 
 def home(request):
@@ -34,13 +40,15 @@ def about(request):
 
 def employers(request):
     form = VacancyForm()
-    industry = request.GET.get("industry")
-    if industry in {slug for slug, *_ in content.INDUSTRIES}:
+    # Industry cards on the page pre-select the closest Airtable industry option.
+    industry = INDUSTRY_PRESELECT.get(request.GET.get("industry", ""))
+    if industry:
         form = VacancyForm(initial={"industry": industry})
     if request.method == "POST":
         form = VacancyForm(request.POST)
         if form.is_valid():
             enquiry = form.save()
+            airtable.push(enquiry)
             send_enquiry_notification(enquiry, request)
             messages.success(request, "Thank you – your vacancy has been received. "
                                       "We'll be in touch shortly to discuss your hiring needs.")
@@ -76,6 +84,7 @@ def candidates(request):
         form = CandidateForm(request.POST, request.FILES)
         if form.is_valid():
             registration = form.save()
+            airtable.push(registration)
             send_enquiry_notification(registration, request)
             messages.success(request, "Thank you for registering your interest. "
                                       "We've received your details and will be in touch.")

@@ -91,26 +91,32 @@
         {% include "includes/form_errors.html" %}
         <div class="hp" aria-hidden="true">{{ form.website }}</div>
         <fieldset>
-          <legend>Your details</legend>
+          <legend>Your business</legend>
           <div class="field-grid">
-            {% include "includes/field.html" with field=form.contact_name %}
             {% include "includes/field.html" with field=form.company %}
-            {% include "includes/field.html" with field=form.email %}
+            {% include "includes/field.html" with field=form.industry %}
+            {% include "includes/field.html" with field=form.contact_name %}
             {% include "includes/field.html" with field=form.phone %}
+            {% include "includes/field.html" with field=form.email wide=True %}
           </div>
         </fieldset>
         <fieldset>
           <legend>About the vacancy</legend>
           <div class="field-grid">
             {% include "includes/field.html" with field=form.position %}
-            {% include "includes/field.html" with field=form.industry %}
-            {% include "includes/field.html" with field=form.employment_type %}
             {% include "includes/field.html" with field=form.positions_count %}
-            {% include "includes/field.html" with field=form.location %}
-            {% include "includes/field.html" with field=form.start_timeframe %}
+            {% include "includes/choice_group.html" with field=form.employment_types cols=3 %}
+            {% include "includes/field.html" with field=form.location wide=True %}
             {% include "includes/field.html" with field=form.details wide=True %}
           </div>
         </fieldset>
+        <div class="consent{% if form.consent.errors %} field--error{% endif %}">
+          <label class="choice choice--consent" for="{{ form.consent.id_for_label }}">
+            {{ form.consent }}
+            <span class="choice__box" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></span>
+            <span class="choice__label">{{ form.consent.label }}</span>
+          </label>
+        </div>
         <button class="btn btn--orange btn--lg btn--block" type="submit">Submit vacancy <svg class="icon"><use href="#i-arrow"/></svg></button>
         <p class="form-note"><svg class="icon"><use href="#i-lock"/></svg> Your details are only used to respond to your enquiry. See our <a href="{% url 'core:privacy' %}">Privacy Policy</a>.</p>
       </form>

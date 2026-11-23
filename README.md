@@ -20,6 +20,28 @@ the same way.
 | **Contact Us** `/contact/` | Contact details and a short general enquiry form. |
 | **Privacy Policy** `/privacy/` | The privacy notice that the candidate consent tick box links to. |
 
+### Forms and Airtable
+The two main forms use the same fields, options and required fields as the SD Recruitment Airtable
+forms:
+
+| Website form | Airtable form |
+|---|---|
+| **Submit a Vacancy** (Employers page) | *SD Recruitment, Employer Enquiry Form* |
+| **Register Your Interest** (Candidates page) | *SD Recruitment, Talent Registration Form* |
+
+The Candidates form also has the items the Candidate Website Content document asked for, which aren't
+in the Airtable form: *What can we help with?* (job opportunities, resume support, interview
+preparation, career counselling), the optional CV upload and the consent tick box.
+
+Each submission is saved on the website first, then copied to Airtable, into the same table the Airtable
+forms use (`core/airtable.py`). Fields are matched by their Airtable field ID, so renaming a column in
+Airtable doesn't break the copy. If Airtable can't be reached, the visitor still sees "Thank you", the
+record shows **Failed** in the admin, and it is sent again by the admin action *Send selected to
+Airtable again* or by `manage.py sync_airtable`. Contact Us messages stay on the website only.
+
+To switch it on, put an Airtable personal access token in `.env` as `AIRTABLE_TOKEN`. It needs the
+`data.records:write` scope and access to the SD Recruitment base only.
+
 ### Behaviour the documents asked for
 - **Service buttons pre-select the form.** *Get resume support*, *Prepare for an interview* and
   *Explore career support* open the same candidate form with that service already ticked
@@ -47,6 +69,7 @@ The admin has the same design as the other SD admins. It includes:
   button.
 - **Current opportunities:** add, edit or hide the jobs shown on the Candidates page. Each job gets
   an *Apply* button that opens the form linked to that job.
+- **Airtable status** on each vacancy and candidate (Sent, Failed or Not set up), with a *send again* action.
 - **Reports:** CSV exports for administrators.
 - **Roles:** *Administrators* have full access. *Staff* (the "Staff" group) can work on records and
   manage jobs, but can't delete records, export reports or manage users.

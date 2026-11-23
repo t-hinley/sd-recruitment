@@ -22,7 +22,7 @@ def tearDownModule():
 
 def make_candidate(**kw):
     data = dict(full_name="Jane Citizen", email="j@example.com", phone="0400000000", location="Perth WA",
-                position_sought="Chef", industry="hospitality", experience="=HYPERLINK(\"x\")",
+                position_sought="=HYPERLINK(\"x\")", industry="Hospitality & Tourism", experience="1–3 Years",
                 support_jobs=True, support_resume=True, consent=True)
     data.update(kw)
     return CandidateRegistration.objects.create(**data)
@@ -36,7 +36,7 @@ class AdminTests(TestCase):
         self.staff = User.objects.create_user("helper", "h@example.com", "a-strong-pass-123", is_staff=True)
         self.cand = make_candidate()
         VacancyEnquiry.objects.create(contact_name="Sam", company="Cafe Co", email="s@example.com", phone="0411111111",
-                                      industry="hospitality", position="Head Chef", employment_type="full-time",
+                                      industry="Hospitality", position="Head Chef", employment_types=["Full Time"],
                                       location="Perth")
         ContactEnquiry.objects.create(name="Alex", email="a@example.com", message="Hello", enquirer_type="other")
 
@@ -59,7 +59,7 @@ class AdminTests(TestCase):
         self.assertContains(r, "New candidates")
         self.assertContains(r, "New vacancies")
         self.assertContains(r, "Current opportunities")
-        self.assertContains(r, "Hospitality, Retail &amp; Administration")
+        self.assertContains(r, "Hospitality &amp; Tourism")
         self.assertContains(r, "Resume support")
         self.assertContains(r, reverse("admin:reports"))
 
@@ -125,12 +125,12 @@ class FollowUpTests(TestCase):
         self.staff = User.objects.create_user("helper", "h@example.com", "a-strong-pass-123", is_staff=True,
                                               first_name="Pema")
         self.staff.groups.add(Group.objects.get(name="Staff"))
-        self.e = make_candidate(phone="0400 000 000", experience="Original experience")
+        self.e = make_candidate(phone="0400 000 000", position_sought="Original position")
         self.url = reverse("admin:core_candidateregistration_change", args=[self.e.pk])
 
     def post_change(self, **extra):
         data = {"status": "active", "assigned_to": self.staff.pk, "notes": "Phone screen done",
-                "full_name": "Hacked", "experience": "Changed", "email": "x@example.com"}
+                "full_name": "Hacked", "position_sought": "Changed", "email": "x@example.com"}
         data.update(extra)
         return self.client.post(self.url, data)
 
@@ -147,8 +147,8 @@ class FollowUpTests(TestCase):
         self.assertEqual(r.status_code, 302)
         self.e.refresh_from_db()
         self.assertEqual((self.e.status, self.e.assigned_to, self.e.notes), ("active", self.staff, "Phone screen done"))
-        self.assertEqual((self.e.full_name, self.e.experience, self.e.email),
-                         ("Jane Citizen", "Original experience", "j@example.com"))
+        self.assertEqual((self.e.full_name, self.e.position_sought, self.e.email),
+                         ("Jane Citizen", "Original position", "j@example.com"))
 
     def test_details_are_read_only_even_for_admins(self):
         self.client.force_login(self.admin)

@@ -4,9 +4,35 @@ from pathlib import Path
 from django.conf import settings
 from django.db import models
 
-from .content import INDUSTRIES
 
-INDUSTRY_CHOICES = [(slug, title) for slug, _icon, title, _ex in INDUSTRIES] + [("other", "Other")]
+def _same(*labels):
+    """Choices whose stored value is the label itself, so they match the Airtable options exactly."""
+    return [(label, label) for label in labels]
+
+
+# ---- Options copied exactly from the SD Recruitment Airtable forms ---------------------------
+EMPLOYER_INDUSTRIES = _same("Aged Care & Disability", "Healthcare", "Hospitality", "Construction & Trades",
+                            "Retail & Warehousing", "Administration & Office", "Other")
+CANDIDATE_INDUSTRIES = _same("Aged Care & Disability", "Healthcare & Nursing", "Hospitality & Tourism",
+                             "Construction & Trades", "Retail & Warehousing", "Administration & Office",
+                             "Cleaning & Maintenance", "Other")
+EMPLOYMENT_TYPES = _same("Full Time", "Part - Time", "Casual", "Temporary / Contract", "Flexible")
+VACANCY_COUNTS = _same("1", "2-5", "6-10", "More than 10", "Not sure yet")
+VISA_TYPES = _same(
+    "Australian Citizen", "Australian Permanent Resident", "New Zealand Citizen (Subclass 444)",
+    "Student Visa (Subclass 500)", "Temporary Graduate Visa (Subclass 485)",
+    "Working Holiday / Work and Holiday Visa (417/462)", "Employer-Sponsored Visa (482/494/186)",
+    "Skilled Visa (189/190/491)", "Partner Visa", "Bridging Visa", "Other Visa", "Offshore Applicant / Unsure",
+)
+EXPERIENCE_LEVELS = _same("No Experience", "Less than 1 Year", "1–3 Years", "3–5 Years", "More than 5 Years")
+
+AIRTABLE_PENDING, AIRTABLE_SENT, AIRTABLE_FAILED, AIRTABLE_OFF = "pending", "sent", "failed", "off"
+AIRTABLE_STATUSES = [
+    (AIRTABLE_PENDING, "Not sent yet"),
+    (AIRTABLE_SENT, "Sent"),
+    (AIRTABLE_FAILED, "Failed"),
+    (AIRTABLE_OFF, "Airtable not set up"),
+]
 
 
 def resume_path(instance, filename):
@@ -31,20 +57,29 @@ class FollowUp(models.Model):
         abstract = True
 
 
+class AirtableCopy(FollowUp):
+    """Records that are also sent to Airtable (see core/airtable.py)."""
+
+    airtable_status = models.CharField("Airtable", max_length=10, choices=AIRTABLE_STATUSES, default=AIRTABLE_PENDING)
+    airtable_id = models.CharField("Airtable record ID", max_length=30, blank=True)
+    airtable_error = models.TextField("Airtable error", blank=True)
+    airtable_synced_at = models.DateTimeField("Sent to Airtable", null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+
+def _list_display(values):
+    return ", ".join(values or [])
+
+
 class Job(models.Model):
     """A current opportunity shown on the Candidates page. Staff add these in the admin."""
 
-    EMPLOYMENT_TYPES = [
-        ("full-time", "Full time"),
-        ("part-time", "Part time"),
-        ("casual", "Casual"),
-        ("contract", "Contract / temporary"),
-    ]
-
     title = models.CharField("Job title", max_length=140)
-    industry = models.CharField(max_length=20, choices=INDUSTRY_CHOICES)
+    industry = models.CharField(max_length=40, choices=CANDIDATE_INDUSTRIES)
     location = models.CharField(max_length=120, help_text="e.g. Osborne Park, WA")
-    employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPES, default="full-time")
+    employment_type = models.CharField(max_length=30, choices=EMPLOYMENT_TYPES, default="Full Time")
     summary = models.TextField(help_text="Two or three short sentences about the role. Keep it brief.")
     is_published = models.BooleanField("Show on website", default=True)
     created_at = models.DateTimeField("Added", auto_now_add=True)
@@ -58,10 +93,10 @@ class Job(models.Model):
         return f"{self.title} – {self.location}"
 
 
-class VacancyEnquiry(FollowUp):
-    """'Submit a Vacancy' form on the Employers page."""
+class VacancyEnquiry(AirtableCopy):
+    """'Submit a Vacancy' form on the Employers page. Same fields as the Airtable
+    'SD Recruitment | Employer Enquiry Form'."""
 
-    EMPLOYMENT_TYPES = Job.EMPLOYMENT_TYPES + [("unsure", "Not sure yet")]
     STATUSES = [
         ("new", "New"),
         ("contacted", "Contacted"),
@@ -70,17 +105,17 @@ class VacancyEnquiry(FollowUp):
         ("closed", "Closed"),
     ]
 
-    contact_name = models.CharField("Your name", max_length=120)
-    company = models.CharField("Business name", max_length=160)
-    email = models.EmailField("Email address")
-    phone = models.CharField("Contact number", max_length=30)
-    industry = models.CharField(max_length=20, choices=INDUSTRY_CHOICES)
-    position = models.CharField("Position(s) to fill", max_length=160)
-    positions_count = models.PositiveSmallIntegerField("Number of positions", default=1)
-    employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPES)
-    location = models.CharField("Work location", max_length=160)
-    start_timeframe = models.CharField("Ideal start date", max_length=80, blank=True)
-    details = models.TextField("About the role", blank=True)
+    company = models.CharField("Company name", max_length=160)
+    industry = models.CharField("Industry / sector", max_length=40, choices=EMPLOYER_INDUSTRIES)
+    contact_name = models.CharField("Contact person", max_length=120, blank=True)
+    phone = models.CharField("Mobile number", max_length=30)
+    email = models.EmailField("Email address", blank=True)
+    position = models.CharField("Position recruiting for", max_length=160)
+    employment_types = models.JSONField("Employment type", default=list, blank=True)
+    positions_count = models.CharField("Number of vacancies", max_length=20, choices=VACANCY_COUNTS, blank=True)
+    location = models.CharField("Work location", max_length=160, blank=True)
+    details = models.TextField("Additional requirements or comments", blank=True)
+    consent = models.BooleanField("Consent to contact", default=False)
     status = models.CharField(max_length=12, choices=STATUSES, default="new")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -92,9 +127,15 @@ class VacancyEnquiry(FollowUp):
     def __str__(self):
         return f"{self.company} – {self.position}"
 
+    @property
+    def employment_type_display(self):
+        return _list_display(self.employment_types)
 
-class CandidateRegistration(FollowUp):
-    """'Register Your Interest' form on the Candidates page."""
+
+class CandidateRegistration(AirtableCopy):
+    """'Register Your Interest' form on the Candidates page. Same fields as the Airtable
+    'SD Recruitment | Talent Registration Form', plus the support requested, CV upload and consent
+    from the Candidate Website Content document."""
 
     SUPPORT_CHOICES = [
         ("jobs", "Job opportunities"),
@@ -111,12 +152,15 @@ class CandidateRegistration(FollowUp):
     ]
 
     full_name = models.CharField(max_length=120)
+    phone = models.CharField("Phone number", max_length=30)
     email = models.EmailField("Email address")
-    phone = models.CharField("Mobile number", max_length=30)
-    location = models.CharField("Current location", max_length=160)
-    position_sought = models.CharField("Type of work or position sought", max_length=160)
-    industry = models.CharField("Preferred industry", max_length=20, choices=INDUSTRY_CHOICES)
-    experience = models.TextField("Relevant experience and qualifications", blank=True)
+    location = models.CharField("Country / location", max_length=160)
+    visa_type = models.CharField("Visa type", max_length=60, choices=VISA_TYPES, blank=True)
+    preferred_location = models.CharField("Preferred job location", max_length=160, blank=True)
+    industry = models.CharField("Industry / job category", max_length=40, choices=CANDIDATE_INDUSTRIES)
+    position_sought = models.TextField("Position(s) interested in", blank=True)
+    employment_types = models.JSONField("Employment type", default=list, blank=True)
+    experience = models.CharField("Relevant work experience", max_length=30, choices=EXPERIENCE_LEVELS, blank=True)
     resume = models.FileField("Resume / CV", upload_to=resume_path, blank=True)
     resume_name = models.CharField("Original file name", max_length=200, blank=True, editable=False)
     support_jobs = models.BooleanField("Job opportunities", default=False)
@@ -135,11 +179,16 @@ class CandidateRegistration(FollowUp):
         verbose_name_plural = "candidate registrations"
 
     def __str__(self):
-        return f"{self.full_name} – {self.position_sought}"
+        first = (self.position_sought or "").splitlines()[0][:60] if self.position_sought else self.industry
+        return f"{self.full_name} – {first}"
 
     @property
     def support_list(self):
         return [label for key, label in self.SUPPORT_CHOICES if getattr(self, f"support_{key}")]
+
+    @property
+    def employment_type_display(self):
+        return _list_display(self.employment_types)
 
 
 class ContactEnquiry(FollowUp):

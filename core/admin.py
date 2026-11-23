@@ -11,7 +11,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 
-from .models import CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
+from . import airtable
+from .models import AIRTABLE_FAILED, AIRTABLE_SENT, CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
 
 
 def person(user):
@@ -43,6 +44,14 @@ FOLLOW_UP = ("Follow-up", {
     "fields": ("status", "assigned_to", "notes", "updated_at"),
     "description": "Only these fields can be changed. The details above are exactly what the visitor sent.",
 })
+
+
+AIRTABLE = ("Airtable copy", {
+    "classes": ("collapse",),
+    "fields": ("airtable_badge", "airtable_synced_at", "airtable_id", "airtable_error"),
+    "description": "A copy of this record is sent to the SD Recruitment Airtable base when it arrives.",
+})
+SYNC_FIELDS = ("airtable_badge", "airtable_synced_at", "airtable_id", "airtable_error")
 
 
 class EnquiryAdmin(admin.ModelAdmin):
@@ -126,37 +135,84 @@ class EnquiryAdmin(admin.ModelAdmin):
         return actions
 
 
+class AirtableAdminMixin:
+    """Airtable status column, read-only details and a 'send again' action."""
+
+    def get_readonly_fields(self, request, obj=None):
+        return super().get_readonly_fields(request, obj) + SYNC_FIELDS
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if self.has_change_permission(request):
+            actions["send_to_airtable"] = self.get_action("send_to_airtable")
+        return actions
+
+    @admin.action(description="Send selected to Airtable again")
+    def send_to_airtable(self, request, queryset):
+        if not airtable.enabled():
+            self.message_user(request, "Airtable is not set up yet (add AIRTABLE_TOKEN to .env).", messages.ERROR)
+            return
+        sent = failed = 0
+        for obj in queryset:
+            if airtable.push(obj):
+                sent += 1
+            else:
+                failed += 1
+        self.message_user(request, f"{sent} in Airtable.", messages.SUCCESS if sent else messages.INFO)
+        if failed:
+            self.message_user(request, f"{failed} could not be sent. See the Airtable error on each record.",
+                              messages.WARNING)
+
+    @admin.display(description="Airtable", ordering="airtable_status")
+    def airtable_badge(self, obj):
+        tone = {AIRTABLE_SENT: "ok", AIRTABLE_FAILED: "bad"}.get(obj.airtable_status, "wait")
+        return format_html('<span class="sdsync {}">{}</span>', tone, obj.get_airtable_status_display())
+
+
 @admin.register(VacancyEnquiry)
-class VacancyEnquiryAdmin(EnquiryAdmin):
-    list_display = ("company", "position", "industry", "location", "status", "handler", "received")
-    list_filter = ("status", AssignedFilter, "industry", "employment_type", "created_at")
+class VacancyEnquiryAdmin(AirtableAdminMixin, EnquiryAdmin):
+    list_display = ("company", "position", "industry", "location", "status", "handler", "airtable_badge", "received")
+    list_filter = ("status", AssignedFilter, "industry", "positions_count", "airtable_status", "created_at")
     search_fields = ("company", "contact_name", "email", "phone", "position", "location", "details", "notes")
-    submitted_fields = ("contact_name", "company", "email_link", "phone_link", "industry", "position",
-                        "positions_count", "employment_type", "location", "start_timeframe", "details", "received_full")
+    submitted_fields = ("company", "industry", "contact_name", "phone_link", "email_link", "position",
+                        "employment_type_display", "positions_count", "location", "details", "consent",
+                        "received_full")
     fieldsets = (
-        ("Vacancy details", {"fields": (("contact_name", "company"), ("email_link", "phone_link"),
-                                        ("industry", "employment_type"), ("position", "positions_count"),
-                                        ("location", "start_timeframe"), "details", "received_full")}),
+        ("Vacancy details", {"fields": (("company", "industry"), ("contact_name", "phone_link"), "email_link",
+                                        ("position", "positions_count"), "employment_type_display", "location",
+                                        "details", ("consent", "received_full"))}),
         FOLLOW_UP,
+        AIRTABLE,
     )
+
+    @admin.display(description="Employment type")
+    def employment_type_display(self, obj):
+        return obj.employment_type_display or "-"
 
 
 @admin.register(CandidateRegistration)
-class CandidateRegistrationAdmin(EnquiryAdmin):
-    list_display = ("full_name", "position_sought", "industry", "location", "support_summary", "cv", "status",
-                    "handler", "received")
-    list_filter = ("status", AssignedFilter, "industry", "support_jobs", "support_resume", "support_interview",
-                   "support_career", "job", "created_at")
-    search_fields = ("full_name", "email", "phone", "location", "position_sought", "experience", "notes")
+class CandidateRegistrationAdmin(AirtableAdminMixin, EnquiryAdmin):
+    list_display = ("full_name", "industry", "location", "support_summary", "cv", "status", "handler",
+                    "airtable_badge", "received")
+    list_filter = ("status", AssignedFilter, "industry", "visa_type", "experience", "support_jobs",
+                   "support_resume", "support_interview", "support_career", "job", "airtable_status", "created_at")
+    search_fields = ("full_name", "email", "phone", "location", "preferred_location", "position_sought", "notes")
     list_select_related = ("assigned_to", "job")
-    submitted_fields = ("full_name", "email_link", "phone_link", "location", "position_sought", "industry",
-                        "job", "experience", "support_summary", "resume_link", "consent", "received_full")
+    submitted_fields = ("full_name", "phone_link", "email_link", "location", "visa_type", "preferred_location",
+                        "industry", "position_sought", "employment_type_display", "experience", "job",
+                        "support_summary", "resume_link", "consent", "received_full")
     fieldsets = (
-        ("Candidate details", {"fields": ("full_name", ("email_link", "phone_link"), ("location", "industry"),
-                                          ("position_sought", "job"), "experience", "support_summary",
+        ("Candidate details", {"fields": ("full_name", ("phone_link", "email_link"), ("location", "visa_type"),
+                                          ("preferred_location", "industry"), "position_sought",
+                                          ("employment_type_display", "experience"), "job", "support_summary",
                                           "resume_link", ("consent", "received_full"))}),
         FOLLOW_UP,
+        AIRTABLE,
     )
+
+    @admin.display(description="Employment type")
+    def employment_type_display(self, obj):
+        return obj.employment_type_display or "-"
 
     @admin.display(description="Support requested")
     def support_summary(self, obj):

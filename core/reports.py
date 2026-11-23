@@ -13,7 +13,7 @@ VACANCIES = "vacancies"
 CONTACTS = "contact"
 
 REPORT_CARDS = {
-    CANDIDATES: ("Candidates", "Candidate registrations, with position sought, industry, support requested and status.",
+    CANDIDATES: ("Candidates", "Candidate registrations, with industry, visa type, experience, support requested and status.",
                  "candidateregistration"),
     VACANCIES: ("Vacancies", "Vacancies submitted by employers, with position, industry, location and status.",
                 "vacancyenquiry"),
@@ -47,12 +47,13 @@ def handler(e):
 def csv_response(report, date_from=None, date_to=None):
     if report == VACANCIES:
         qs = VacancyEnquiry.objects.select_related("assigned_to")
-        header = ["Received", "Contact name", "Business", "Email", "Phone", "Industry", "Position", "Positions",
-                  "Employment type", "Location", "Ideal start", "About the role", "Status", "Assigned to", "Internal notes"]
+        header = ["Received", "Company name", "Industry / sector", "Contact person", "Mobile number", "Email address",
+                  "Position recruiting for", "Employment type", "Number of vacancies", "Work location",
+                  "Additional requirements or comments", "Consent to contact", "Status", "Assigned to", "Internal notes"]
 
         def row(e):
-            return [e.created_at, e.contact_name, e.company, e.email, e.phone, e.get_industry_display(), e.position,
-                    e.positions_count, e.get_employment_type_display(), e.location, e.start_timeframe, e.details,
+            return [e.created_at, e.company, e.industry, e.contact_name, e.phone, e.email, e.position,
+                    e.employment_type_display, e.positions_count, e.location, e.details, "Yes" if e.consent else "No",
                     e.get_status_display(), handler(e), e.notes]
     elif report == CONTACTS:
         qs = ContactEnquiry.objects.select_related("assigned_to")
@@ -64,14 +65,16 @@ def csv_response(report, date_from=None, date_to=None):
     else:
         report = CANDIDATES
         qs = CandidateRegistration.objects.select_related("assigned_to", "job")
-        header = ["Received", "Full name", "Email", "Mobile", "Location", "Position sought", "Industry",
-                  "Applied for", "Experience and qualifications", "Support requested", "CV provided", "Status",
+        header = ["Received", "Full name", "Phone number", "Email address", "Country / location", "Visa type",
+                  "Preferred job location", "Industry / job category", "Position(s) interested in", "Employment type",
+                  "Relevant work experience", "Applied for", "Support requested", "CV provided", "Status",
                   "Assigned to", "Internal notes"]
 
         def row(e):
-            return [e.created_at, e.full_name, e.email, e.phone, e.location, e.position_sought,
-                    e.get_industry_display(), e.job.title if e.job else "", e.experience, ", ".join(e.support_list),
-                    "Yes" if e.resume else "No", e.get_status_display(), handler(e), e.notes]
+            return [e.created_at, e.full_name, e.phone, e.email, e.location, e.visa_type, e.preferred_location,
+                    e.industry, e.position_sought, e.employment_type_display, e.experience,
+                    e.job.title if e.job else "", ", ".join(e.support_list), "Yes" if e.resume else "No",
+                    e.get_status_display(), handler(e), e.notes]
 
     if date_from:
         qs = qs.filter(created_at__date__gte=date_from)
