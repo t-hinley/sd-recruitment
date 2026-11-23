@@ -1,0 +1,46 @@
+{% load static %}
+<footer class="site-footer">
+  <div class="container site-footer__grid">
+    <div class="site-footer__brand">
+      <img src="{% static 'images/logo.png' %}" alt="{{ business.name }}" width="843" height="168" loading="lazy">
+      <p>Connecting businesses with capable people, and helping candidates take the next step in their careers.</p>
+      {% if linkedin_url %}<a class="footer-social" href="{{ linkedin_url }}" target="_blank" rel="noopener"><svg class="icon"><use href="#i-linkedin"/></svg> Follow us on LinkedIn</a>{% endif %}
+    </div>
+    <div>
+      <h2 class="site-footer__title">Pages</h2>
+      <ul class="site-footer__list">
+        <li><a href="{% url 'core:home' %}">Home</a></li>
+        <li><a href="{% url 'core:about' %}">About Us</a></li>
+        <li><a href="{% url 'core:employers' %}">Employers</a></li>
+        <li><a href="{% url 'core:candidates' %}">Candidates</a></li>
+        <li><a href="{% url 'core:contact' %}">Contact Us</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2 class="site-footer__title">Get started</h2>
+      <ul class="site-footer__list">
+        <li><a href="{% url 'core:employers' %}#vacancy">Submit a vacancy</a></li>
+        <li><a href="{% url 'core:candidates' %}#register">Register your interest</a></li>
+        <li><a href="{% url 'core:candidates' %}?service=resume#register">Resume support</a></li>
+        <li><a href="{% url 'core:candidates' %}?service=interview#register">Interview preparation</a></li>
+        <li><a href="{% url 'core:candidates' %}?service=career#register">Career counselling</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2 class="site-footer__title">Contact</h2>
+      <ul class="site-footer__contact">
+        {% if business.phone_display %}<li><svg class="icon"><use href="#i-phone"/></svg><a href="tel:{{ business.phone_tel }}">{{ business.phone_display }}</a></li>{% endif %}
+        {% if business.email %}<li><svg class="icon"><use href="#i-mail"/></svg><a href="mailto:{{ business.email }}">{{ business.email }}</a></li>{% endif %}
+        {% if business.address %}<li><svg class="icon"><use href="#i-pin"/></svg><span>{{ business.address }}</span></li>{% endif %}
+        {% if business.hours %}<li><svg class="icon"><use href="#i-clock"/></svg><span>{{ business.hours }}</span></li>{% endif %}
+        <li><svg class="icon"><use href="#i-chat"/></svg><a href="{% url 'core:contact' %}#enquiry">Send us a message</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="site-footer__bottom">
+    <div class="container site-footer__bottom-inner">
+      <span>&copy; {% now "Y" %} {{ business.name }}. All rights reserved. &middot; <a href="{% url 'core:privacy' %}">Privacy Policy</a></span>
+      <span class="site-footer__tag">{{ business.tagline }}</span>
+    </div>
+  </div>
+</footer>

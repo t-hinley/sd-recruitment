@@ -1,0 +1,7 @@
+{% extends "auth_base.html" %}
+{% block title %}Admin Login{% endblock %}
+{% block heading %}Admin Login{% endblock %}
+{% block subheading %}Sign in to manage your website enquiries{% endblock %}
+{% block signedin %}<div class="autherr">You are signed in as {{ username }}, but this account cannot open the admin. Log in with a different account below.</div>{% endblock %}
+{% block action %}{{ app_path }}{% endblock %}
+{% block forgot %}{% url 'admin_password_reset' %}{% endblock %}

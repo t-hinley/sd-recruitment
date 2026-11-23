@@ -1,0 +1,1 @@
+{% for m in messages %}{% if 'toast' in m.tags %}<div class="toasts" role="status" aria-live="polite"><div class="toast"><span class="toasttick" aria-hidden="true">&#10003;</span><span>{{ m }}</span></div></div>{% endif %}{% endfor %}

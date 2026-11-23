@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}For Employers | SD Recruitment{% endblock %}
+{% block meta_description %}Recruitment support that saves you time and helps you make confident hiring decisions. Submit a vacancy with SD Recruitment.{% endblock %}
+{% block og_title %}For Employers – SD Recruitment{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container page-hero__inner">
+    <p class="eyebrow">For employers</p>
+    <h1>Find the Right People for Your Business.</h1>
+    <p class="page-hero__lead">Recruitment support that saves you time and helps you make confident hiring decisions.</p>
+    <div class="page-hero__actions">
+      <a class="btn btn--orange btn--lg" href="#vacancy">Submit a vacancy <svg class="icon"><use href="#i-arrow"/></svg></a>
+      <a class="btn btn--ghost btn--lg" href="#process">How it works</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Why work with a recruitment agency?</p>
+      <h2>Less time hiring, better people found</h2>
+    </div>
+    <div class="card-grid card-grid--3">
+      {% for icon, title, text in benefits %}
+      <div class="feature">
+        <span class="feature__icon"><svg class="icon"><use href="#i-{{ icon }}"/></svg></span>
+        <h3>{{ title }}</h3>
+        <p>{{ text }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section section--grey" id="industries">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Industries we support</p>
+      <h2>Recruiting across key sectors</h2>
+    </div>
+    <div class="card-grid card-grid--4">
+      {% for slug, icon, title, examples in industries %}
+      <a class="industry" href="?industry={{ slug }}#vacancy">
+        <span class="industry__icon"><svg class="icon"><use href="#i-{{ icon }}"/></svg></span>
+        <h3>{{ title }}</h3>
+        <p>{{ examples }}</p>
+        <span class="industry__link">Submit a vacancy <svg class="icon"><use href="#i-arrow"/></svg></span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section" id="process">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">How our recruitment process works</p>
+      <h2>Five clear steps, from brief to placement</h2>
+    </div>
+    <ol class="steps steps--5">
+      {% for title, text in process %}
+      <li class="step"><span class="step__n">{{ forloop.counter }}</span><h3>{{ title }}</h3><p>{{ text }}</p></li>
+      {% endfor %}
+    </ol>
+  </div>
+</section>
+
+<section class="section section--grey form-section" id="vacancy">
+  <div class="container form-layout">
+    <div class="form-intro">
+      <p class="eyebrow">Submit a vacancy</p>
+      <h2>Need help finding the right people?</h2>
+      <p>Tell us about your vacancy and let's discuss how SD Recruitment can support your hiring needs.</p>
+      <ul class="ticks">
+        <li><svg class="icon"><use href="#i-check"/></svg> Takes about two minutes</li>
+        <li><svg class="icon"><use href="#i-check"/></svg> We'll contact you to talk through the role</li>
+        <li><svg class="icon"><use href="#i-check"/></svg> No obligation to proceed</li>
+      </ul>
+      {% if business.phone_display %}<p class="form-intro__alt">Prefer to talk? Call <a href="tel:{{ business.phone_tel }}">{{ business.phone_display }}</a></p>{% endif %}
+    </div>
+
+    <div class="form-card">
+      {% if sent %}
+        {% include "includes/form_success.html" with title="Vacancy received" again_url="?#vacancy" again_label="Submit another vacancy" %}
+      {% else %}
+      <form method="post" action="{% url 'core:employers' %}#vacancy" novalidate>
+        {% csrf_token %}
+        {% include "includes/form_errors.html" %}
+        <div class="hp" aria-hidden="true">{{ form.website }}</div>
+        <fieldset>
+          <legend>Your details</legend>
+          <div class="field-grid">
+            {% include "includes/field.html" with field=form.contact_name %}
+            {% include "includes/field.html" with field=form.company %}
+            {% include "includes/field.html" with field=form.email %}
+            {% include "includes/field.html" with field=form.phone %}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>About the vacancy</legend>
+          <div class="field-grid">
+            {% include "includes/field.html" with field=form.position %}
+            {% include "includes/field.html" with field=form.industry %}
+            {% include "includes/field.html" with field=form.employment_type %}
+            {% include "includes/field.html" with field=form.positions_count %}
+            {% include "includes/field.html" with field=form.location %}
+            {% include "includes/field.html" with field=form.start_timeframe %}
+            {% include "includes/field.html" with field=form.details wide=True %}
+          </div>
+        </fieldset>
+        <button class="btn btn--orange btn--lg btn--block" type="submit">Submit vacancy <svg class="icon"><use href="#i-arrow"/></svg></button>
+        <p class="form-note"><svg class="icon"><use href="#i-lock"/></svg> Your details are only used to respond to your enquiry. See our <a href="{% url 'core:privacy' %}">Privacy Policy</a>.</p>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

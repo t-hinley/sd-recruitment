@@ -1,0 +1,86 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<h1 class="sdh1">Overview</h1>
+{% if is_admin %}<p class="sdreportlink"><a class="button" href="{% url 'admin:reports' %}">Export reports (CSV)</a></p>{% endif %}
+
+<div class="sdcards">
+  {% for c in cards %}
+  <a class="sdcard {{ c.flag }}" href="{{ c.url }}">
+    <span class="sdtile {{ c.tone }}">{{ c.icon|safe }}</span>
+    <b>{{ c.value }}</b>
+    <span class="sdlbl">{{ c.label }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="sdpanels">
+  <section class="sdpanel">
+    <header><h3>Candidates by status</h3><span>{{ cand_total }} total</span></header>
+    {% if cand_total %}
+    <ul class="sdbars">{% for r in cand_status_rows %}<li><span class="bl">{{ r.label }}</span><span class="bt"><i style="width:{{ r.pct }}%"></i></span><b>{{ r.n }}</b></li>{% endfor %}</ul>
+    {% else %}<p class="sdnone">No candidate registrations yet.</p>{% endif %}
+  </section>
+  <section class="sdpanel">
+    <header><h3>Vacancies by status</h3><span>{{ vac_total }} total</span></header>
+    {% if vac_total %}
+    <ul class="sdbars sdbars--orange">{% for r in vac_status_rows %}<li><span class="bl">{{ r.label }}</span><span class="bt"><i style="width:{{ r.pct }}%"></i></span><b>{{ r.n }}</b></li>{% endfor %}</ul>
+    {% else %}<p class="sdnone">No vacancies submitted yet.</p>{% endif %}
+  </section>
+</div>
+
+<div class="sdpanels">
+  <section class="sdpanel">
+    <header><h3>Activity by industry</h3><span>{{ waiting }} new item{{ waiting|pluralize }} waiting &middot; {{ this_week }} in the last 7 days</span></header>
+    {% if industry_rows %}
+    <div class="sdteamwrap"><table class="sdteam sdcountry">
+      <thead><tr><th>Industry</th><th>Candidates</th><th>Vacancies</th><th>Open vacancies</th></tr></thead>
+      <tbody>{% for r in industry_rows %}
+        <tr><td><b>{{ r.label }}</b></td>
+          <td><a href="{{ cand_url }}?industry__exact={{ r.filter|urlencode }}">{{ r.cands }}</a></td>
+          <td><a href="{{ vac_url }}?industry__exact={{ r.filter|urlencode }}">{{ r.vacs }}</a></td>
+          <td>{{ r.open }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="sdnone">Nothing received yet.</p>{% endif %}
+  </section>
+  <section class="sdpanel">
+    <header><h3>Support candidates asked for</h3></header>
+    {% if cand_total %}
+    <ul class="sdbars sdbars--orange">{% for r in support_rows %}<li><span class="bl"><a href="{{ r.url }}">{{ r.label }}</a></span><span class="bt"><i style="width:{{ r.pct }}%"></i></span><b>{{ r.n }}</b></li>{% endfor %}</ul>
+    {% else %}<p class="sdnone">No candidate registrations yet.</p>{% endif %}
+  </section>
+</div>
+
+<div class="sdpanels wide">
+  <section class="sdpanel">
+    <header><h3>Latest from the website</h3><a href="{{ cand_url }}">All candidates &rarr;</a></header>
+    {% if recent %}
+    <ul class="sdlist">
+      {% for e in recent %}
+      <li>
+        <span class="sdav2">{{ e.name|slice:":1"|upper }}</span>
+        <div class="sdtext"><a href="{{ e.url }}"><b>{{ e.name }}</b></a><small>{{ e.kind }} &middot; {{ e.email }}</small>{% if e.message %}<p>{{ e.message|truncatechars:90 }}</p>{% endif %}</div>
+        <span class="sdchip st-{{ e.status }}">{{ e.status_label }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="sdnone">No enquiries yet.</p>{% endif %}
+  </section>
+  <section class="sdpanel">
+    <header><h3>Recent actions</h3></header>
+    {% if recent_actions %}
+    <ul class="sdacts">
+      {% for a in recent_actions %}
+      <li class="f{{ a.flag }}"><span class="sddot"></span><div>{% if a.url %}<a href="{{ a.url }}">{{ a.repr }}</a>{% else %}{{ a.repr }}{% endif %}<small>{{ a.type }} &middot; {{ a.when|timesince }} ago</small></div></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="sdnone">{% translate 'None available' %}</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+<section class="contact-prompt">
+  <div class="container contact-prompt__inner">
+    <div>
+      <h2>{{ prompt_title|default:"Let's talk about what you need." }}</h2>
+      <p>{{ prompt_text|default:"Whether you're hiring or looking for your next role, get in touch and we'll take it from there." }}</p>
+    </div>
+    <div class="contact-prompt__actions">
+      <a class="btn btn--orange" href="{% url 'core:contact' %}">Contact us <svg class="icon"><use href="#i-arrow"/></svg></a>
+      {% if business.phone_display %}<a class="btn btn--outline-light" href="tel:{{ business.phone_tel }}"><svg class="icon"><use href="#i-phone"/></svg> {{ business.phone_display }}</a>{% endif %}
+    </div>
+  </div>
+</section>

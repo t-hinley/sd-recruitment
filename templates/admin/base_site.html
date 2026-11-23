@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:"SD Recruitment admin" }}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="icon" type="image/png" href="{% static 'core/favicon.png' %}">
+<link rel="stylesheet" href="{% static 'core/fonts.css' %}?v={{ asset_v }}">
+<link rel="stylesheet" href="{% static 'core/admin.css' %}?v={{ asset_v }}">
+<link rel="stylesheet" href="{% static 'core/shell.css' %}?v={{ asset_v }}">
+{% endblock %}
+
+{% block branding %}
+<div id="site-name"><a href="{% url 'admin:index' %}"><img class="adm-logo" src="{% static 'core/logo.png' %}" width="40" height="40" alt=""><span>SD Recruitment</span></a></div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

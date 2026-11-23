@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}About Us | SD Recruitment{% endblock %}
+{% block meta_description %}SD Recruitment connects businesses with capable people and helps candidates take the next step in their careers. Learn about our approach and values.{% endblock %}
+{% block og_title %}About SD Recruitment{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container page-hero__inner">
+    <p class="eyebrow">About us</p>
+    <h1>Match Talent, Drive Success.</h1>
+    <p class="page-hero__lead">SD Recruitment connects businesses with capable people and helps candidates take the next step in their careers.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container split">
+    <div class="prose">
+      <h2>Who we are</h2>
+      <p>SD Recruitment is a recruitment partner for employers and candidates. We work with businesses that need reliable, capable staff, and with people who are looking for work or planning their next career move.</p>
+      <p>For employers, we manage the time-consuming parts of hiring: understanding the role, finding and screening candidates, and coordinating interviews through to placement.</p>
+      <p>For candidates, we offer more than job matching. Our career support services, including resume support, interview preparation and career counselling, help people present their experience well and approach opportunities with confidence.</p>
+    </div>
+    <div class="split__aside">
+      <div class="brand-card">
+        <img src="{% static 'images/logo-mark.png' %}" alt="" width="480" height="417" loading="lazy">
+        <p class="brand-card__tag">Match Talent, Drive Success.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section--grey">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Our recruitment approach</p>
+      <h2>Simple, personal and organised</h2>
+    </div>
+    <ol class="steps steps--4">
+      {% for title, text in approach %}
+      <li class="step"><span class="step__n">{{ forloop.counter }}</span><h3>{{ title }}</h3><p>{{ text }}</p></li>
+      {% endfor %}
+    </ol>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Our values</p>
+      <h2>What you can expect from us</h2>
+    </div>
+    <div class="card-grid card-grid--4">
+      {% for icon, title, text in values %}
+      <div class="feature">
+        <span class="feature__icon"><svg class="icon"><use href="#i-{{ icon }}"/></svg></span>
+        <h3>{{ title }}</h3>
+        <p>{{ text }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section section--grey">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Industries we support</p>
+      <h2>Where we recruit</h2>
+    </div>
+    <ul class="industry-list">
+      {% for slug, icon, title, examples in industries %}
+      <li><svg class="icon"><use href="#i-{{ icon }}"/></svg><span>{{ title }}</span></li>
+      {% endfor %}
+    </ul>
+    <p class="center-link"><a class="link-arrow" href="{% url 'core:employers' %}#industries">See the roles we recruit for <svg class="icon"><use href="#i-arrow"/></svg></a></p>
+  </div>
+</section>
+
+{% include "includes/contact_prompt.html" with prompt_title="Ready to start a conversation?" %}
+{% endblock %}

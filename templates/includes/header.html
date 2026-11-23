@@ -1,0 +1,25 @@
+{% load static %}{% with url_name=request.resolver_match.url_name %}
+<header class="site-header" id="site-header">
+  <div class="container site-header__inner">
+    <a class="brand" href="{% url 'core:home' %}" aria-label="{{ business.name }} – home">
+      <img src="{% static 'images/logo.png' %}" alt="{{ business.name }} – {{ business.tagline }}" width="843" height="168">
+    </a>
+    <button class="nav-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="{% url 'core:home' %}" {% if url_name == 'home' %}aria-current="page"{% endif %}>Home</a></li>
+        <li><a href="{% url 'core:about' %}" {% if url_name == 'about' %}aria-current="page"{% endif %}>About Us</a></li>
+        <li><a href="{% url 'core:employers' %}" {% if url_name == 'employers' %}aria-current="page"{% endif %}>Employers</a></li>
+        <li><a href="{% url 'core:candidates' %}" {% if url_name == 'candidates' %}aria-current="page"{% endif %}>Candidates</a></li>
+        <li><a href="{% url 'core:contact' %}" {% if url_name == 'contact' %}aria-current="page"{% endif %}>Contact Us</a></li>
+      </ul>
+      <div class="site-nav__ctas">
+        <a class="btn btn--orange" href="{% url 'core:employers' %}#vacancy">Submit a Vacancy</a>
+        <a class="btn btn--blue" href="{% url 'core:candidates' %}#register">Register Your Interest</a>
+      </div>
+    </nav>
+  </div>
+</header>
+{% endwith %}

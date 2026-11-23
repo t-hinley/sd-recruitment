@@ -1,0 +1,243 @@
+"""Custom-styled Django admin (same look as the other SD admins): a sidebar,
+a welcome bar, a dashboard of headline numbers, a profile page and CSV reports."""
+
+from datetime import timedelta
+
+from django.contrib import admin
+from django.contrib.admin.models import LogEntry
+from django.db.models import Count, Q
+from django.urls import reverse
+from django.utils import timezone
+
+from .models import CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
+
+# Small outline icons (24x24, stroke) for the sidebar and dashboard cards.
+ICONS = {
+    "dashboard": '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+    "vacancyenquiry": '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 12.5h18"/>',
+    "candidateregistration": '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>',
+    "contactenquiry": '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5L12 13l8.5-6.5"/>',
+    "job": '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+    "cv": '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/>',
+    "placed": '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    "new": '<path d="M4 5h16v11H8l-4 4z"/>',
+    "quote": '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+    "subcontractor": '<circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 7.5v4M12 11.5l-5.5 4.3M12 11.5l5.5 4.3"/>',
+    "calendar": '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    "report": '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 17v-3M12 17v-6M15 17v-4"/>',
+    "user": '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>',
+    "group": '<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6M17 5a3 3 0 0 1 0 6M22 19c0-2.5-1.5-4.5-4-5"/>',
+    "site": '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    "alert": '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
+    "default": '<rect x="4" y="4" width="16" height="16" rx="3"/>',
+}
+
+
+def icon(name, size=20):
+    return ('<svg class="sdi" width="%d" height="%d" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+            'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">%s</svg>'
+            % (size, size, ICONS.get(name, ICONS["default"])))
+
+
+def bars(rows):
+    top = max([n for _, n in rows] or [1]) or 1
+    return [{"label": label, "n": n, "pct": max(4, round(100 * n / top)) if n else 0} for label, n in rows]
+
+
+class SDAdminSite(admin.AdminSite):
+    site_header = "SD Recruitment - Admin"
+    site_title = "SD Recruitment admin"
+    index_title = "Website enquiries"
+    enable_nav_sidebar = False  # we draw our own sidebar
+
+    MAIN = ["candidateregistration", "vacancyenquiry", "contactenquiry", "job"]
+    SHORT = {"candidateregistration": "Candidates", "vacancyenquiry": "Vacancies",
+             "contactenquiry": "Contact enquiries", "job": "Current opportunities"}  # fit the sidebar
+    SETTINGS = ["user", "group"]
+
+    # ---- pages -------------------------------------------------------------
+    def get_urls(self):
+        from django.urls import path
+        from .views import resume_download
+        return [path("profile/", self.admin_view(self.profile_view), name="profile"),
+                path("reports/", self.admin_view(self.reports_view), name="reports"),
+                path("cv/<int:pk>/", self.admin_view(resume_download), name="resume_download")] + super().get_urls()
+
+    def login(self, request, extra_context=None):
+        """Pause sign-in after repeated failures, so the admin address cannot be used to guess passwords."""
+        from . import security
+        if request.method == "POST" and security.login_blocked(request):
+            from django.shortcuts import render
+            return render(request, "admin/login.html", {
+                "blocked": "Too many failed sign-in attempts. Please wait 15 minutes and try again.",
+                "site_name": "SD Recruitment"}, status=429)
+        return super().login(request, {"site_name": "SD Recruitment", **(extra_context or {})})
+
+    def logout(self, request, extra_context=None):
+        """After Log out, return to the admin log in page instead of a separate 'logged out' page."""
+        if request.method == "POST":
+            from django.contrib.auth import logout as auth_logout
+            from django.shortcuts import redirect
+            auth_logout(request)
+            return redirect("admin:login")
+        return super().logout(request, extra_context)
+
+    def profile_view(self, request):
+        from django.template.response import TemplateResponse
+        user = request.user
+        return TemplateResponse(request, "admin/profile.html", {
+            **self.each_context(request), "title": "Profile",
+            "p_name": user.get_full_name() or user.get_username(),
+            "p_email": user.email,
+            "p_joined": user.date_joined,
+            "p_active": user.is_active,
+            "p_role": "Administrator" if user.is_superuser else "Staff",
+            "p_last_login": user.last_login,
+        })
+
+    def reports_view(self, request):
+        """Download website enquiries as a CSV file (administrators only)."""
+        from django.core.exceptions import PermissionDenied
+        from django.template.response import TemplateResponse
+        from . import reports
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        form = reports.ReportForm(request.GET or None)
+        if request.GET and form.is_valid():
+            d = form.cleaned_data
+            return reports.csv_response(d["report"], d["date_from"], d["date_to"])
+        chosen = form["report"].value() or reports.CANDIDATES
+        cards = [{"value": v, "title": t, "help": h, "icon": ICONS[i], "checked": v == chosen}
+                 for v, (t, h, i) in reports.REPORT_CARDS.items()]
+        return TemplateResponse(request, "admin/reports.html", {
+            **self.each_context(request), "title": "Reports", "form": form, "report_cards": cards})
+
+    # ---- shared context ----------------------------------------------------
+    def each_context(self, request):
+        ctx = super().each_context(request)
+        if request.user.is_authenticated and request.user.is_staff:
+            ctx["sd_nav"] = self._nav(request)
+            ctx["sd_icon_site"] = icon("site")
+        return ctx
+
+    def _nav(self, request):
+        path = request.path
+        found = {}
+        for app in self.get_app_list(request):
+            for m in app["models"]:
+                found[m["object_name"].lower()] = m
+
+        def item(key, label, url, ic):
+            active = path == url if key == "dashboard" else path.startswith(url)
+            return {"label": label, "url": url, "icon": icon(ic), "active": active}
+
+        main = [item("dashboard", "Dashboard", reverse("admin:index"), "dashboard")]
+        for k in self.MAIN:
+            m = found.get(k)
+            if m and m.get("admin_url"):
+                main.append(item(k, self.SHORT.get(k, m["name"]), m["admin_url"], k))
+        if request.user.is_superuser:
+            main.append(item("reports", "Reports", reverse("admin:reports"), "report"))
+        rest = []
+        for k in self.SETTINGS:
+            m = found.get(k)
+            if m and m.get("admin_url"):
+                rest.append(item(k, m["name"], m["admin_url"], k))
+        known = set(self.MAIN) | set(self.SETTINGS)
+        for k, m in found.items():
+            if k not in known and m.get("admin_url"):
+                rest.append(item(k, m["name"], m["admin_url"], "default"))
+        return {"main": main, "rest": rest}
+
+    # ---- dashboard ---------------------------------------------------------
+    def index(self, request, extra_context=None):
+        cands = CandidateRegistration.objects.all()
+        vacs = VacancyEnquiry.objects.all()
+        contacts = ContactEnquiry.objects.all()
+        month_start = timezone.localdate().replace(day=1)
+        week_ago = timezone.now() - timedelta(days=7)
+        cand_url = reverse("admin:core_candidateregistration_changelist")
+        vac_url = reverse("admin:core_vacancyenquiry_changelist")
+        contact_url = reverse("admin:core_contactenquiry_changelist")
+        job_url = reverse("admin:core_job_changelist")
+        new_total = (cands.filter(status="new").count() + vacs.filter(status="new").count()
+                     + contacts.filter(status="new").count())
+
+        def open_(qs):
+            return qs.exclude(status__in=["closed", "placed"])
+
+        mine = sum(open_(qs).filter(assigned_to=request.user).count() for qs in (cands, vacs, contacts))
+        unassigned = sum(open_(qs).filter(assigned_to__isnull=True).count() for qs in (cands, vacs, contacts))
+        cards = [
+            ("Assigned to me (open)", mine, "user", "blue", cand_url + "?assigned=me", ""),
+            ("New candidates", cands.filter(status="new").count(), "new", "orange", cand_url + "?status__exact=new", "warn"),
+            ("New vacancies", vacs.filter(status="new").count(), "vacancyenquiry", "orange", vac_url + "?status__exact=new", "warn"),
+            ("New contact enquiries", contacts.filter(status="new").count(), "contactenquiry", "teal",
+             contact_url + "?status__exact=new", ""),
+            ("Candidates", cands.count(), "candidateregistration", "blue", cand_url, ""),
+            ("Candidates with a CV", cands.exclude(resume="").count(), "cv", "purple", cand_url, ""),
+            ("Vacancies being recruited", vacs.filter(status="recruiting").count(), "group", "green",
+             vac_url + "?status__exact=recruiting", ""),
+            ("Placements", vacs.filter(status="placed").count() + cands.filter(status="placed").count(), "placed", "green",
+             vac_url + "?status__exact=placed", ""),
+            ("Live opportunities", Job.objects.filter(is_published=True).count(), "job", "pink",
+             job_url + "?is_published__exact=1", ""),
+            ("Unassigned (open)", unassigned, "group", "amber", cand_url + "?assigned=none", ""),
+            ("Received this month", sum(qs.filter(created_at__date__gte=month_start).count()
+                                        for qs in (cands, vacs, contacts)), "calendar", "amber", cand_url, ""),
+        ]
+        cards = [{"label": l, "value": v, "icon": icon(i, 22), "tone": t, "url": u, "flag": f if v else ""}
+                 for (l, v, i, t, u, f) in cards]
+
+        by_status = dict(cands.values_list("status").annotate(n=Count("id")))
+        cand_status_rows = bars([(label, by_status.get(v, 0)) for v, label in CandidateRegistration.STATUSES])
+        by_vstatus = dict(vacs.values_list("status").annotate(n=Count("id")))
+        vac_status_rows = bars([(label, by_vstatus.get(v, 0)) for v, label in VacancyEnquiry.STATUSES])
+
+        # Activity by industry: candidates and vacancies side by side.
+        from .models import INDUSTRY_CHOICES
+        c_ind = dict(cands.values_list("industry").annotate(n=Count("id")))
+        v_ind = dict(vacs.values_list("industry").annotate(n=Count("id")))
+        v_open = dict(open_(vacs).values_list("industry").annotate(n=Count("id")))
+        industry_rows = [{"label": label, "filter": slug, "cands": c_ind.get(slug, 0), "vacs": v_ind.get(slug, 0),
+                          "open": v_open.get(slug, 0)} for slug, label in INDUSTRY_CHOICES
+                         if c_ind.get(slug) or v_ind.get(slug)]
+
+        support = cands.aggregate(**{key: Count("id", filter=Q(**{f"support_{key}": True}))
+                                     for key, _ in CandidateRegistration.SUPPORT_CHOICES})
+        support_rows = bars([(label, support[key]) for key, label in CandidateRegistration.SUPPORT_CHOICES])
+        support_links = {label: f"{cand_url}?support_{key}__exact=1" for key, label in CandidateRegistration.SUPPORT_CHOICES}
+        for r in support_rows:
+            r["url"] = support_links[r["label"]]
+
+        recent = [{"name": e.full_name, "email": e.email, "kind": "Candidate · " + e.position_sought,
+                   "message": e.experience, "status": e.status, "status_label": e.get_status_display(),
+                   "when": e.created_at, "url": reverse("admin:core_candidateregistration_change", args=[e.pk])}
+                  for e in cands[:6]]
+        recent += [{"name": e.company, "email": e.email, "kind": "Vacancy · " + e.position, "message": e.details,
+                    "status": e.status, "status_label": e.get_status_display(), "when": e.created_at,
+                    "url": reverse("admin:core_vacancyenquiry_change", args=[e.pk])} for e in vacs[:6]]
+        recent += [{"name": e.name, "email": e.email, "kind": "Contact · " + e.get_enquirer_type_display(),
+                    "message": e.message, "status": e.status, "status_label": e.get_status_display(),
+                    "when": e.created_at, "url": reverse("admin:core_contactenquiry_change", args=[e.pk])}
+                   for e in contacts[:6]]
+        recent = sorted(recent, key=lambda r: r["when"], reverse=True)[:8]
+
+        actions = [{"flag": e.action_flag, "repr": e.object_repr, "type": e.content_type.name if e.content_type else "",
+                    "url": e.get_admin_url(), "when": e.action_time}
+                   for e in LogEntry.objects.filter(user=request.user).select_related("content_type")[:8]]
+
+        extra_context = {
+            **(extra_context or {}),
+            "cards": cards,
+            "cand_status_rows": cand_status_rows, "cand_total": cands.count(),
+            "vac_status_rows": vac_status_rows, "vac_total": vacs.count(),
+            "industry_rows": industry_rows, "support_rows": support_rows,
+            "cand_url": cand_url, "vac_url": vac_url,
+            "waiting": new_total,
+            "this_week": sum(qs.filter(created_at__gte=week_ago).count() for qs in (cands, vacs, contacts)),
+            "recent": recent,
+            "recent_actions": actions,
+            "is_admin": request.user.is_superuser,
+        }
+        return super().index(request, extra_context)

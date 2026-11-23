@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy | SD Recruitment{% endblock %}
+{% block meta_description %}How SD Recruitment collects, uses and protects personal information.{% endblock %}
+
+{% block content %}
+<section class="page-hero page-hero--short">
+  <div class="container page-hero__inner">
+    <p class="eyebrow">Privacy</p>
+    <h1>Privacy Policy</h1>
+    <p class="page-hero__lead">How we collect, use and look after your personal information.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container prose prose--narrow">
+    <p>SD Recruitment respects your privacy. This policy explains how we handle personal information in line with the Australian Privacy Principles.</p>
+
+    <h2>What we collect</h2>
+    <p>We collect the information you give us through our website forms, by email or by phone. Depending on the form, this may include:</p>
+    <ul>
+      <li><strong>Candidates:</strong> your name, contact details, location, the work you are looking for, preferred industry, experience and qualifications, your resume/CV if you choose to provide it, and the support you request.</li>
+      <li><strong>Employers:</strong> your name, business name, contact details and information about the vacancy.</li>
+      <li><strong>General enquiries:</strong> your name, contact details and message.</li>
+    </ul>
+
+    <h2>How we use it</h2>
+    <ul>
+      <li>To respond to your enquiry or registration.</li>
+      <li>To consider candidates for suitable roles and contact them about recruitment opportunities and career support services, where they have agreed to this.</li>
+      <li>To understand an employer's hiring needs and manage the recruitment process.</li>
+    </ul>
+    <p>We will discuss a role with you before sharing your details with a prospective employer. We do not sell your personal information.</p>
+
+    <h2>How we protect it</h2>
+    <p>Information submitted through this website is stored on a secure server. Resumes are not publicly accessible and can only be opened by authorised SD Recruitment staff. We keep personal information only as long as it is needed for recruitment purposes or as required by law.</p>
+
+    <h2>Your choices</h2>
+    <p>You can ask to see or correct the personal information we hold about you, or ask us to stop contacting you or delete your details, at any time. Registering with us does not guarantee an interview, job offer or placement.</p>
+
+    <h2>Contact us about privacy</h2>
+    <p>For privacy questions or requests, please <a href="{% url 'core:contact' %}">contact us</a>{% if business.email %} or email <a href="mailto:{{ business.email }}">{{ business.email }}</a>{% endif %}.</p>
+    <p class="muted">Last updated November 2026.</p>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}For Candidates | SD Recruitment{% endblock %}
+{% block meta_description %}Your next opportunity starts here. Register your interest with SD Recruitment and get support with job opportunities, resumes, interviews and career planning.{% endblock %}
+{% block og_title %}For Candidates – SD Recruitment{% endblock %}
+
+{% block content %}
+<section class="page-hero page-hero--candidates">
+  <div class="container page-hero__inner">
+    <p class="eyebrow">For candidates</p>
+    <h1>Your Next Opportunity Starts Here.</h1>
+    <p class="page-hero__lead">Whether you are actively looking for work or planning your next career move, SD Recruitment is here to help you take the next step.</p>
+    <div class="page-hero__actions">
+      <a class="btn btn--blue btn--lg" href="#register" data-service="">Register your interest <svg class="icon"><use href="#i-arrow"/></svg></a>
+      <a class="btn btn--ghost btn--lg" href="#opportunities">Current opportunities</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Why work with a recruiter?</p>
+      <h2>Support that makes your job search easier</h2>
+    </div>
+    <div class="card-grid card-grid--5">
+      {% for icon, title, text in benefits %}
+      <div class="feature feature--compact">
+        <span class="feature__icon"><svg class="icon"><use href="#i-{{ icon }}"/></svg></span>
+        <h3>{{ title }}</h3>
+        <p>{{ text }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section section--grey" id="career-support">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Additional career support services</p>
+      <h2>Prepare, build confidence and take the next step</h2>
+      <p>In addition to recruitment and job matching, we offer career support to help you get ready for your next opportunity.</p>
+    </div>
+    <div class="card-grid card-grid--3">
+      {% for slug, icon, title, text, button in services %}
+      <article class="service-card">
+        <span class="service-card__icon"><svg class="icon"><use href="#i-{{ icon }}"/></svg></span>
+        <h3>{{ title }}</h3>
+        <p>{{ text }}</p>
+        <a class="btn btn--blue" href="?service={{ slug }}#register" data-service="{{ slug }}">{{ button }} <svg class="icon"><use href="#i-arrow"/></svg></a>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section" id="opportunities">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Current opportunities</p>
+      <h2>Roles we're recruiting for</h2>
+    </div>
+    {% if jobs %}
+    <ul class="jobs">
+      {% for job in jobs %}
+      <li class="job">
+        <div class="job__main">
+          <h3>{{ job.title }}</h3>
+          <p class="job__meta">
+            <span><svg class="icon"><use href="#i-pin"/></svg> {{ job.location }}</span>
+            <span><svg class="icon"><use href="#i-clock"/></svg> {{ job.get_employment_type_display }}</span>
+            <span><svg class="icon"><use href="#i-briefcase"/></svg> {{ job.get_industry_display }}</span>
+          </p>
+          <p>{{ job.summary|linebreaksbr }}</p>
+        </div>
+        <a class="btn btn--orange" href="?job={{ job.pk }}#register">Apply <svg class="icon"><use href="#i-arrow"/></svg></a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state">
+      <svg class="icon"><use href="#i-search"/></svg>
+      <div>
+        <h3>No roles are advertised right now</h3>
+        <p>New opportunities come up regularly, and some are never widely advertised. Register your interest and we'll contact you when a suitable role becomes available.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section section--grey">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">How it works</p>
+      <h2>What happens after you register</h2>
+    </div>
+    <ol class="steps steps--4">
+      {% for title, text in process %}
+      <li class="step"><span class="step__n">{{ forloop.counter }}</span><h3>{{ title }}</h3><p>{{ text }}</p></li>
+      {% endfor %}
+    </ol>
+    <blockquote class="pull-quote">At SD Recruitment, we do more than connect people with jobs. We help candidates prepare, build confidence and take the next step in their careers.</blockquote>
+  </div>
+</section>
+
+<section class="section form-section" id="register">
+  <div class="container form-layout">
+    <div class="form-intro">
+      <p class="eyebrow">Register your interest</p>
+      <h2>Tell us what you're looking for</h2>
+      <p>Complete our candidate form and tell us what opportunities or support you are looking for.</p>
+      <ul class="ticks">
+        <li><svg class="icon"><use href="#i-check"/></svg> Free for candidates</li>
+        <li><svg class="icon"><use href="#i-check"/></svg> Resume upload is optional</li>
+        <li><svg class="icon"><use href="#i-check"/></svg> We'll contact you to discuss next steps</li>
+      </ul>
+      <p class="form-intro__small">Registering helps us consider you for suitable roles. It does not guarantee an interview, job offer or placement.</p>
+    </div>
+
+    <div class="form-card">
+      {% if sent %}
+        {% include "includes/form_success.html" with title="Registration received" again_url="?#register" again_label="Back to the form" %}
+      {% else %}
+      <form method="post" action="{% url 'core:candidates' %}#register" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% include "includes/form_errors.html" %}
+        <div class="hp" aria-hidden="true">{{ form.website }}</div>
+        {{ form.job }}
+        {% if selected_job %}
+        <div class="applying" data-applying>
+          <svg class="icon"><use href="#i-briefcase"/></svg>
+          <span>Applying for <strong>{{ selected_job.title }}</strong> &middot; {{ selected_job.location }}</span>
+          <a href="?#register" class="applying__clear">Change</a>
+        </div>
+        {% endif %}
+
+        <fieldset class="support{% if form.support.errors %} field--error{% endif %}" id="support-options">
+          <legend>What can we help with? <span class="req" aria-hidden="true">*</span></legend>
+          <div class="choice-grid">
+            {% for opt in form.support %}
+            <label class="choice" for="{{ opt.id_for_label }}">
+              {{ opt.tag }}
+              <span class="choice__box" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></span>
+              <span class="choice__label">{{ opt.choice_label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          {% for error in form.support.errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+        </fieldset>
+
+        <fieldset>
+          <legend>Your details</legend>
+          <div class="field-grid">
+            {% include "includes/field.html" with field=form.full_name wide=True %}
+            {% include "includes/field.html" with field=form.email %}
+            {% include "includes/field.html" with field=form.phone %}
+            {% include "includes/field.html" with field=form.location wide=True %}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>The work you're looking for</legend>
+          <div class="field-grid">
+            {% include "includes/field.html" with field=form.position_sought %}
+            {% include "includes/field.html" with field=form.industry %}
+            {% include "includes/field.html" with field=form.experience wide=True %}
+          </div>
+          <div class="field field--wide{% if form.resume.errors %} field--error{% endif %}">
+            <span class="field__label" id="resume-label">{{ form.resume.label }} <span class="opt">(optional)</span></span>
+            <label class="upload" for="{{ form.resume.id_for_label }}">
+              <input type="file" name="{{ form.resume.html_name }}" id="{{ form.resume.id_for_label }}" accept="{{ form.resume.field.widget.attrs.accept }}" aria-labelledby="resume-label" aria-describedby="resume-help">
+              <span class="upload__icon"><svg class="icon"><use href="#i-upload"/></svg></span>
+              <span class="upload__text" data-upload-text><strong>Choose a file</strong> or drag it here</span>
+            </label>
+            <p class="field__help" id="resume-help">{{ form.resume.help_text }}</p>
+            {% for error in form.resume.errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+          </div>
+        </fieldset>
+
+        <div class="consent{% if form.consent.errors %} field--error{% endif %}">
+          <label class="choice choice--consent" for="{{ form.consent.id_for_label }}">
+            {{ form.consent }}
+            <span class="choice__box" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></span>
+            <span class="choice__label">I agree to SD Recruitment storing my details and contacting me about recruitment opportunities and services, as described in the <a href="{% url 'core:privacy' %}" target="_blank">Privacy Policy</a>. <span class="req" aria-hidden="true">*</span></span>
+          </label>
+          {% for error in form.consent.errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <button class="btn btn--blue btn--lg btn--block" type="submit">Register your interest <svg class="icon"><use href="#i-arrow"/></svg></button>
+        <p class="form-note"><svg class="icon"><use href="#i-lock"/></svg> Your resume and details are stored securely and only seen by our recruitment team.</p>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

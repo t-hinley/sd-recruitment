@@ -1,0 +1,66 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'core/reports.js' %}?v={{ asset_v }}" defer></script>{% endblock %}
+
+{% block content %}
+<h1 class="sdh1">Reports</h1>
+<p class="rp-lead">Download candidates, vacancies or contact enquiries for any period as a CSV file (opens in Excel).</p>
+
+<form method="get" class="rp" id="reportform" novalidate>
+  {% if form.errors %}<p class="rp-error" role="alert">Please correct the details below.</p>{% endif %}
+
+  <section class="rp-step">
+    <h2><span class="rp-n">1</span> Choose a report</h2>
+    <div class="rp-cards" role="radiogroup" aria-label="Report">
+      {% for c in report_cards %}
+      <label class="rp-card">
+        <input type="radio" name="report" value="{{ c.value }}" {% if c.checked %}checked{% endif %}>
+        <span class="rp-cbody">
+          <span class="rp-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ c.icon|safe }}</svg></span>
+          <b>{{ c.title }}</b>
+          <small>{{ c.help }}</small>
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+    {{ form.report.errors }}
+  </section>
+
+  <section class="rp-step">
+    <h2><span class="rp-n">2</span> Choose the dates <em>(optional)</em></h2>
+    <div class="rp-presets" role="group" aria-label="Quick date ranges">
+      <button type="button" data-range="month">This month</button>
+      <button type="button" data-range="lastmonth">Last month</button>
+      <button type="button" data-range="30">Last 30 days</button>
+      <button type="button" data-range="year">This year</button>
+      <button type="button" data-range="all">All dates</button>
+    </div>
+    <div class="rp-dates">
+      <div class="rp-field">
+        <label for="{{ form.date_from.id_for_label }}">From</label>
+        <input type="date" name="date_from" id="{{ form.date_from.id_for_label }}" value="{{ form.date_from.value|default_if_none:'' }}">
+        {{ form.date_from.errors }}
+      </div>
+      <span class="rp-to" aria-hidden="true">&rarr;</span>
+      <div class="rp-field">
+        <label for="{{ form.date_to.id_for_label }}">To</label>
+        <input type="date" name="date_to" id="{{ form.date_to.id_for_label }}" value="{{ form.date_to.value|default_if_none:'' }}">
+        {{ form.date_to.errors }}
+      </div>
+    </div>
+    <p class="rp-hint">Leave both dates empty to include every date.</p>
+  </section>
+
+
+  <div class="rp-actions">
+    <button type="submit" class="rp-download">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg>
+      Download CSV
+    </button>
+    <p class="rp-note">These files contain personal information. Keep them private and delete them when you no longer need them.</p>
+  </div>
+</form>
+{% endblock %}

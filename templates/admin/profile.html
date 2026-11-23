@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<div class="pfwrap">
+  <h1 class="pftitle">Profile</h1>
+  <p class="pfsub">Manage your account information</p>
+  <section class="pfcard">
+    <div class="pfhead">
+      <span class="pfavatar"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg></span>
+      <div><h2>{{ p_name }}</h2><p>{{ p_email|default:"No email address" }}</p><span class="pfrole">{{ p_role }}</span></div>
+    </div>
+    <div class="pfbody">
+      <h3>Basic information</h3>
+      <div class="pfgrid">
+        <div class="pfitem"><span class="pfico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg></span><div><small>Full name</small><b>{{ p_name }}</b></div></div>
+        <div class="pfitem"><span class="pfico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><div><small>Email address</small><b>{{ p_email|default:"-" }}</b></div></div>
+        <div class="pfitem"><span class="pfico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><div><small>Member since</small><b>{{ p_joined|date:"j F Y" }}</b></div></div>
+        <div class="pfitem"><span class="pfico"><i class="pfdot {% if p_active %}on{% endif %}"></i></span><div><small>Status</small><b>{% if p_active %}Active{% else %}Inactive{% endif %}</b></div></div>
+      </div>
+      <hr class="pfrule">
+      <h3>Account settings</h3>
+      <div class="pfrow">
+        <div><b>Password</b><small>{% if p_last_login %}Last signed in {% if p_last_login|timesince == "0 minutes" %}just now{% else %}{{ p_last_login|timesince }} ago{% endif %}{% else %}Keep your password private and at least 12 characters long{% endif %}</small></div>
+        <a href="{% url 'admin:password_change' %}">Change password</a>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

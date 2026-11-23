@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us | SD Recruitment{% endblock %}
+{% block meta_description %}Get in touch with SD Recruitment about hiring, career opportunities or career support.{% endblock %}
+{% block og_title %}Contact SD Recruitment{% endblock %}
+
+{% block content %}
+<section class="page-hero page-hero--short">
+  <div class="container page-hero__inner">
+    <p class="eyebrow">Contact us</p>
+    <h1>We'd love to hear from you.</h1>
+    <p class="page-hero__lead">Questions about hiring, opportunities or career support? Send us a message and we'll get back to you.</p>
+  </div>
+</section>
+
+<section class="section form-section" id="enquiry">
+  <div class="container form-layout">
+    <aside class="contact-aside">
+      {% if business.phone_display or business.email or business.address %}
+      <div class="contact-card">
+        <h2>Contact details</h2>
+        <ul class="contact-list">
+          {% if business.phone_display %}<li><span class="contact-list__icon"><svg class="icon"><use href="#i-phone"/></svg></span><div><small>Phone</small><a href="tel:{{ business.phone_tel }}">{{ business.phone_display }}</a></div></li>{% endif %}
+          {% if business.email %}<li><span class="contact-list__icon"><svg class="icon"><use href="#i-mail"/></svg></span><div><small>Email</small><a href="mailto:{{ business.email }}">{{ business.email }}</a></div></li>{% endif %}
+          {% if business.address %}<li><span class="contact-list__icon"><svg class="icon"><use href="#i-pin"/></svg></span><div><small>Office</small><span>{{ business.address }}</span></div></li>{% endif %}
+          {% if business.hours %}<li><span class="contact-list__icon"><svg class="icon"><use href="#i-clock"/></svg></span><div><small>Hours</small><span>{{ business.hours }}</span></div></li>{% endif %}
+        </ul>
+      </div>
+      {% endif %}
+      <div class="quick-links">
+        <a class="quick-link" href="{% url 'core:employers' %}#vacancy">
+          <span class="quick-link__icon quick-link__icon--orange"><svg class="icon"><use href="#i-briefcase"/></svg></span>
+          <span><strong>Hiring?</strong><small>Submit a vacancy</small></span>
+          <svg class="icon quick-link__arrow"><use href="#i-arrow"/></svg>
+        </a>
+        <a class="quick-link" href="{% url 'core:candidates' %}#register">
+          <span class="quick-link__icon"><svg class="icon"><use href="#i-users"/></svg></span>
+          <span><strong>Looking for work?</strong><small>Register your interest</small></span>
+          <svg class="icon quick-link__arrow"><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+    </aside>
+
+    <div class="form-card">
+      {% if sent %}
+        {% include "includes/form_success.html" with title="Message sent" again_url="?#enquiry" again_label="Send another message" %}
+      {% else %}
+      <h2 class="form-card__title">Send us a message</h2>
+      <form method="post" action="{% url 'core:contact' %}#enquiry" novalidate>
+        {% csrf_token %}
+        {% include "includes/form_errors.html" %}
+        <div class="hp" aria-hidden="true">{{ form.website }}</div>
+        <fieldset class="radio-row{% if form.enquirer_type.errors %} field--error{% endif %}">
+          <legend>I am</legend>
+          <div class="choice-grid choice-grid--3">
+            {% for opt in form.enquirer_type %}
+            <label class="choice choice--radio" for="{{ opt.id_for_label }}">
+              {{ opt.tag }}
+              <span class="choice__box" aria-hidden="true"></span>
+              <span class="choice__label">{{ opt.choice_label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        <div class="field-grid">
+          {% include "includes/field.html" with field=form.name wide=True %}
+          {% include "includes/field.html" with field=form.email %}
+          {% include "includes/field.html" with field=form.phone %}
+          {% include "includes/field.html" with field=form.message wide=True %}
+        </div>
+        <button class="btn btn--blue btn--lg btn--block" type="submit">Send message <svg class="icon"><use href="#i-arrow"/></svg></button>
+        <p class="form-note"><svg class="icon"><use href="#i-lock"/></svg> We only use your details to reply. See our <a href="{% url 'core:privacy' %}">Privacy Policy</a>.</p>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
