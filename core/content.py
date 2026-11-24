@@ -109,19 +109,79 @@ CANDIDATE_BENEFITS = [
      "Have someone to communicate with and ask questions during the recruitment process."),
 ]
 
-# slug matches CandidateRegistration support choices; used for ?service=<slug> on the form.
+# Career support cards on the Candidates page. Each button opens that service on the Career Services page.
+# (slug, icon, title, short description, price line, button label)
 CAREER_SERVICES = [
     ("resume", "file", "Resume Support",
      "Get help creating or improving your resume so your skills, experience and achievements are clearly presented.",
-     "Create My Resume"),
+     "From $50", "Create My Resume"),
     ("interview", "mic", "Interview Preparation",
      "Build confidence and prepare for interviews with practical guidance on common questions and how to "
      "present your experience.",
-     "Book A Session"),
+     "$95 · 45-minute session", "Book My Interview Session"),
     ("career", "compass", "Career Counselling",
      "Discuss your career goals, strengths and possible pathways to help plan your next career move.",
-     "Book 15-min free Session"),
+     "First 15 minutes free", "Book a Free Consultation"),
 ]
+
+# ---- Career Services page (client's service and pricing document) -------------------------
+PRICE_NOTE = "All prices are in Australian dollars and include GST."
+
+# (slug, name, price, price note, audience note, bullet points)
+RESUME_PACKAGES = [
+    ("student", "Student Resume", "$50", "", "For applicants aged 19 years and below.", [
+        "Ideal for students and first-time job seekers.",
+        "Highlights education, skills and achievements.",
+        "Suitable for casual, part-time and entry-level positions.",
+    ]),
+    ("basic", "Basic Resume", "$95", "", "", [
+        "Professionally structured and formatted resume.",
+        "Highlights employment history, skills and qualifications.",
+        "Suitable for general job applications and career transitions.",
+    ]),
+    ("professional", "Professional Resume", "$200", "", "", [
+        "Professionally written and tailored resume.",
+        "Highlights career achievements and expertise.",
+        "Suitable for experienced professionals and specialised roles.",
+    ]),
+    ("executive", "Executive Resume", "$350", "", "", [
+        "Premium resume writing for senior professionals and executives.",
+        "Highlights leadership experience, strategic achievements and management capabilities.",
+        "Designed for senior management, executive and leadership positions.",
+    ]),
+    ("criteria", "Selection Criteria Writing", "$35", "per criterion", "", [
+        "Professionally written responses to individual selection criteria.",
+        "Tailored to the position requirements and the applicant\u2019s experience.",
+        "Suitable for government, public sector and other roles requiring written selection criteria responses.",
+    ]),
+]
+
+INTERVIEW_SERVICE = {
+    "price": "$95",
+    "intro": "Build confidence and improve your interview skills with a 45-minute one-on-one coaching session "
+             "with an experienced interview coach.",
+    "points": [
+        "Personalised interview coaching tailored to your target role.",
+        "Practice answering common and behavioural interview questions.",
+        "Guidance on presenting your skills, experience and strengths.",
+        "Tips to improve confidence, communication and interview performance.",
+    ],
+}
+
+COUNSELLING_SERVICE = {
+    "intro": "Not sure about your next career move? Get professional guidance to help you identify your strengths, "
+             "explore career opportunities and make informed decisions about your professional future.",
+    "points": [
+        "One-on-one career counselling with a career adviser.",
+        "Explore career options aligned with your skills, interests and qualifications.",
+        "Guidance on career transitions, professional development and job opportunities.",
+        "Personalised advice to help you plan your next career steps.",
+    ],
+    "pricing": [
+        ("First consultation", "15 minutes", "Free"),
+        ("Follow-up session", "30 minutes", "$65"),
+    ],
+}
 
 CANDIDATE_PROCESS = [
     ("Register your interest", "Tell us about your experience, the work you want and any support you need."),

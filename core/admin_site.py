@@ -9,7 +9,7 @@ from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
+from .models import CandidateRegistration, ContactEnquiry, Job, ServiceRequest, VacancyEnquiry
 
 # Small outline icons (24x24, stroke) for the sidebar and dashboard cards.
 ICONS = {
@@ -17,6 +17,7 @@ ICONS = {
     "vacancyenquiry": '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 12.5h18"/>',
     "candidateregistration": '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>',
     "contactenquiry": '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5L12 13l8.5-6.5"/>',
+    "servicerequest": '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/>',
     "job": '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
     "cv": '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/>',
     "placed": '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
@@ -50,8 +51,8 @@ class SDAdminSite(admin.AdminSite):
     index_title = "Website enquiries"
     enable_nav_sidebar = False  # we draw our own sidebar
 
-    MAIN = ["candidateregistration", "vacancyenquiry", "contactenquiry", "job"]
-    SHORT = {"candidateregistration": "Candidates", "vacancyenquiry": "Vacancies",
+    MAIN = ["candidateregistration", "vacancyenquiry", "servicerequest", "contactenquiry", "job"]
+    SHORT = {"candidateregistration": "Candidates", "vacancyenquiry": "Vacancies", "servicerequest": "Service requests",
              "contactenquiry": "Contact enquiries", "job": "Current opportunities"}  # fit the sidebar
     SETTINGS = ["user", "group"]
 
@@ -61,7 +62,9 @@ class SDAdminSite(admin.AdminSite):
         from .views import resume_download
         return [path("profile/", self.admin_view(self.profile_view), name="profile"),
                 path("reports/", self.admin_view(self.reports_view), name="reports"),
-                path("cv/<int:pk>/", self.admin_view(resume_download), name="resume_download")] + super().get_urls()
+                path("cv/<int:pk>/", self.admin_view(resume_download), name="resume_download"),
+                path("cv/service/<int:pk>/", self.admin_view(resume_download), {"kind": "service"},
+                     name="service_resume_download")] + super().get_urls()
 
     def login(self, request, extra_context=None):
         """Pause sign-in after repeated failures, so the admin address cannot be used to guess passwords."""
@@ -162,6 +165,8 @@ class SDAdminSite(admin.AdminSite):
         cands = CandidateRegistration.objects.all()
         vacs = VacancyEnquiry.objects.all()
         contacts = ContactEnquiry.objects.all()
+        services = ServiceRequest.objects.all()
+        service_url = reverse("admin:core_servicerequest_changelist")
         month_start = timezone.localdate().replace(day=1)
         week_ago = timezone.now() - timedelta(days=7)
         cand_url = reverse("admin:core_candidateregistration_changelist")
@@ -172,10 +177,11 @@ class SDAdminSite(admin.AdminSite):
                      + contacts.filter(status="new").count())
 
         def open_(qs):
-            return qs.exclude(status__in=["closed", "placed"])
+            return qs.exclude(status__in=["closed", "placed", "completed"])
 
-        mine = sum(open_(qs).filter(assigned_to=request.user).count() for qs in (cands, vacs, contacts))
-        unassigned = sum(open_(qs).filter(assigned_to__isnull=True).count() for qs in (cands, vacs, contacts))
+        everything = (cands, vacs, services, contacts)
+        mine = sum(open_(qs).filter(assigned_to=request.user).count() for qs in everything)
+        unassigned = sum(open_(qs).filter(assigned_to__isnull=True).count() for qs in everything)
         failed = cands.filter(airtable_status="failed").count() + vacs.filter(airtable_status="failed").count()
 
         def rows(items):
@@ -191,6 +197,8 @@ class SDAdminSite(admin.AdminSite):
              cand_url + "?status__exact=new"),
             ("New vacancies", vacs.filter(status="new").count(), "vacancyenquiry", "orange",
              vac_url + "?status__exact=new"),
+            ("New service requests", services.filter(status="new").count(), "servicerequest", "orange",
+             service_url + "?status__exact=new"),
             ("New contact enquiries", contacts.filter(status="new").count(), "contactenquiry", "orange",
              contact_url + "?status__exact=new"),
             ("Unassigned (open)", unassigned, "group", "orange", cand_url + "?assigned=none"),
@@ -209,10 +217,10 @@ class SDAdminSite(admin.AdminSite):
             ("Live opportunities", Job.objects.filter(is_published=True).count(), "job", "blue",
              job_url + "?is_published__exact=1"),
             ("Received this month", sum(qs.filter(created_at__date__gte=month_start).count()
-                                        for qs in (cands, vacs, contacts)), "calendar", "blue", cand_url),
+                                        for qs in everything), "calendar", "blue", cand_url),
         ]
         attention_rows, glance_rows = rows(attention), rows(glance)
-        waiting_total = sum(r["n"] for r in attention_rows[:3])
+        waiting_total = sum(r["n"] for r in attention_rows[:4])
 
         by_status = dict(cands.values_list("status").annotate(n=Count("id")))
         cand_status_rows = bars([(label, by_status.get(v, 0)) for v, label in CandidateRegistration.STATUSES])
@@ -262,6 +270,8 @@ class SDAdminSite(admin.AdminSite):
                 for one, many, n, url in (
                     ("candidate", "candidates", open_(cands).filter(assigned_to=request.user).count(), cand_url),
                     ("vacancy", "vacancies", open_(vacs).filter(assigned_to=request.user).count(), vac_url),
+                    ("service request", "service requests",
+                     open_(services).filter(assigned_to=request.user).count(), service_url),
                     ("contact enquiry", "contact enquiries",
                      open_(contacts).filter(assigned_to=request.user).count(), contact_url),
                 )) if p["n"]],
@@ -270,7 +280,7 @@ class SDAdminSite(admin.AdminSite):
             "industry_rows": industry_rows, "support_rows": support_rows,
             "cand_url": cand_url, "vac_url": vac_url,
             "waiting": new_total,
-            "this_week": sum(qs.filter(created_at__gte=week_ago).count() for qs in (cands, vacs, contacts)),
+            "this_week": sum(qs.filter(created_at__gte=week_ago).count() for qs in (cands, vacs, services, contacts)),
             "recent": recent,
             "recent_actions": actions,
             "is_admin": request.user.is_superuser,

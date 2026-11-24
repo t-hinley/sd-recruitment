@@ -5,7 +5,8 @@ from django import forms
 from django.conf import settings
 
 from .models import (CANDIDATE_INDUSTRIES, EMPLOYER_INDUSTRIES, EMPLOYMENT_TYPES, EXPERIENCE_LEVELS,
-                     VACANCY_COUNTS, VISA_TYPES, CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry)
+                     VACANCY_COUNTS, VISA_TYPES, CandidateRegistration, ContactEnquiry, Job, ServiceRequest,
+                     VacancyEnquiry)
 
 PHONE_RE = re.compile(r"^[0-9 +()\-]{8,20}$")
 
@@ -36,6 +37,23 @@ class HoneypotMixin(forms.Form):
         if phone and not PHONE_RE.match(phone):
             raise forms.ValidationError("Please enter a valid phone number.")
         return phone
+
+
+def clean_resume_file(f):
+    """Check an uploaded resume: allowed type, size limit, and that it really is a document."""
+    if not f or not hasattr(f, "size"):
+        return f
+    ext = Path(f.name).suffix.lower().lstrip(".")
+    if ext not in settings.RESUME_EXTENSIONS:
+        raise forms.ValidationError("Please upload a PDF or Word document (.pdf, .doc or .docx).")
+    if f.size > settings.RESUME_MAX_MB * 1024 * 1024:
+        raise forms.ValidationError(f"The file is too large. The limit is {settings.RESUME_MAX_MB} MB.")
+    if ext in SIGNATURES:
+        head = f.read(8)
+        f.seek(0)
+        if not any(head.startswith(sig) for sig in SIGNATURES[ext]):
+            raise forms.ValidationError("This file doesn't look like a valid document. Please try another file.")
+    return f
 
 
 def _choices(placeholder, choices):
@@ -147,20 +165,7 @@ class CandidateForm(HoneypotMixin, forms.ModelForm):
         )
 
     def clean_resume(self):
-        f = self.cleaned_data.get("resume")
-        if not f or not hasattr(f, "size"):
-            return f
-        ext = Path(f.name).suffix.lower().lstrip(".")
-        if ext not in settings.RESUME_EXTENSIONS:
-            raise forms.ValidationError("Please upload a PDF or Word document (.pdf, .doc or .docx).")
-        if f.size > settings.RESUME_MAX_MB * 1024 * 1024:
-            raise forms.ValidationError(f"The file is too large. The limit is {settings.RESUME_MAX_MB} MB.")
-        if ext in SIGNATURES:
-            head = f.read(8)
-            f.seek(0)
-            if not any(head.startswith(sig) for sig in SIGNATURES[ext]):
-                raise forms.ValidationError("This file doesn't look like a valid document. Please try another file.")
-        return f
+        return clean_resume_file(self.cleaned_data.get("resume"))
 
     def save(self, commit=True):
         obj = super().save(commit=False)
@@ -188,3 +193,75 @@ class ContactForm(HoneypotMixin, forms.ModelForm):
             "enquirer_type": forms.RadioSelect,
             "message": forms.Textarea(attrs={"rows": 5, "placeholder": "How can we help?"}),
         }
+
+
+class ServiceRequestForm(HoneypotMixin, forms.ModelForm):
+    """Request form on the Career Services page. The package is needed for resume writing, and the number
+    of criteria for Selection Criteria Writing."""
+
+    prefix = "service"
+
+    consent = forms.BooleanField(
+        required=True,
+        label="I agree to SD Recruitment storing my details and contacting me about this request, "
+              "as described in the Privacy Policy.",
+        error_messages={"required": "Please tick this box so we can contact you."},
+    )
+
+    class Meta:
+        model = ServiceRequest
+        fields = ["service", "package", "criteria_count", "full_name", "email", "phone", "role",
+                  "preferred_times", "resume", "details", "consent"]
+        labels = {"full_name": "Full name"}
+        widgets = {
+            "service": forms.RadioSelect,
+            "criteria_count": forms.NumberInput(attrs={"min": 1, "max": 50, "inputmode": "numeric"}),
+            "full_name": forms.TextInput(attrs={"autocomplete": "name"}),
+            "email": forms.EmailInput(attrs={"autocomplete": "email", "placeholder": "you@email.com"}),
+            "phone": forms.TextInput(attrs={"autocomplete": "tel", "inputmode": "tel", "placeholder": "04xx xxx xxx"}),
+            "role": forms.TextInput(attrs={"placeholder": "e.g. Registered Nurse, Store Manager"}),
+            "preferred_times": forms.TextInput(attrs={"placeholder": "e.g. Weekday evenings, or Saturday morning"}),
+            "details": forms.Textarea(attrs={"rows": 3, "placeholder": "e.g. the job you're applying for, or your deadline"}),
+        }
+        help_texts = {
+            "preferred_times": "We'll contact you to confirm a time.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["service"].choices = ServiceRequest.SERVICES
+        self.fields["package"].choices = _choices("Select a package", ServiceRequest.PACKAGES)
+        self.fields["criteria_count"].min_value = 1
+        self.fields["criteria_count"].max_value = 50
+        exts = ", ".join(f".{e}" for e in settings.RESUME_EXTENSIONS)
+        self.fields["resume"].widget.attrs["accept"] = exts
+        self.fields["resume"].help_text = (f"Optional. If you have one, PDF or Word document up to "
+                                           f"{settings.RESUME_MAX_MB} MB.")
+
+    def clean_resume(self):
+        return clean_resume_file(self.cleaned_data.get("resume"))
+
+    def clean(self):
+        d = super().clean()
+        service = d.get("service")
+        if service == "resume":
+            if not d.get("package"):
+                self.add_error("package", "Please choose a resume package.")
+            elif d.get("package") == "criteria" and not d.get("criteria_count"):
+                self.add_error("criteria_count", "Please tell us how many selection criteria you need.")
+        else:
+            d["package"] = ""
+        if d.get("package") != "criteria":
+            d["criteria_count"] = None
+        if service == "resume":
+            d["preferred_times"] = ""
+        return d
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        f = self.cleaned_data.get("resume")
+        if f and hasattr(f, "name"):
+            obj.resume_name = Path(f.name).name[:200]
+        if commit:
+            obj.save()
+        return obj

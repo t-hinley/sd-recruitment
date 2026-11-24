@@ -40,15 +40,16 @@
     <div class="section-head">
       <p class="eyebrow">Additional career support services</p>
       <h2>Prepare, build confidence and take the next step</h2>
-      <p>In addition to recruitment and job matching, we offer career support to help you get ready for your next opportunity.</p>
+      <p>In addition to recruitment and job matching, we offer career support to help you get ready for your next opportunity. <a href="{% url 'core:career_services' %}">See all services and prices</a>.</p>
     </div>
     <div class="card-grid card-grid--3">
-      {% for slug, icon, title, text, button in services %}
+      {% for slug, icon, title, text, price, button in services %}
       <article class="service-card">
         <span class="service-card__icon"><svg class="icon"><use href="#i-{{ icon }}"/></svg></span>
         <h3>{{ title }}</h3>
         <p>{{ text }}</p>
-        <a class="btn btn--blue" href="?service={{ slug }}#register" data-service="{{ slug }}">{{ button }} <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <p class="service-card__price">{{ price }}</p>
+        <a class="btn btn--blue" href="{% url 'core:career_services' %}#{% if slug == 'career' %}counselling{% else %}{{ slug }}{% endif %}">{{ button }} <svg class="icon"><use href="#i-arrow"/></svg></a>
       </article>
       {% endfor %}
     </div>

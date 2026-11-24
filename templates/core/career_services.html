@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Career Services | Resumes, Interview Coaching & Career Counselling | SD Recruitment{% endblock %}
+{% block meta_description %}Professional resume writing from $50, one-on-one interview coaching ($95) and career counselling with a free 15-minute first consultation.{% endblock %}
+{% block og_title %}Career Services – SD Recruitment{% endblock %}
+
+{% block content %}
+<section class="page-hero page-hero--candidates">
+  <div class="container page-hero__inner">
+    <p class="eyebrow">Professional career support</p>
+    <h1>Career Services</h1>
+    <p class="page-hero__lead">Professional resumes, one-on-one interview coaching and career counselling to help you take the next step.</p>
+    <nav class="jump-links" aria-label="Services on this page">
+      <a href="#resume"><svg class="icon"><use href="#i-file"/></svg> Create My Resume</a>
+      <a href="#interview"><svg class="icon"><use href="#i-mic"/></svg> Interview Preparation</a>
+      <a href="#counselling"><svg class="icon"><use href="#i-compass"/></svg> Career Counselling</a>
+    </nav>
+  </div>
+</section>
+
+<section class="section" id="resume">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Resume</p>
+      <h2>Create My Resume</h2>
+      <p>Choose the package that suits your experience and the roles you're applying for.</p>
+    </div>
+    <div class="packages">
+      {% for slug, name, price, per, audience, points in packages %}
+      <article class="package">
+        <h3>{{ name }}</h3>
+        <p class="package__price">{{ price }}{% if per %} <small>{{ per }}</small>{% endif %}</p>
+        {% if audience %}<p class="package__audience">{{ audience }}</p>{% endif %}
+        <ul class="package__points">
+          {% for p in points %}<li><svg class="icon"><use href="#i-check"/></svg><span>{{ p }}</span></li>{% endfor %}
+        </ul>
+        <a class="package__choose" href="?service=resume&amp;package={{ slug }}#request" data-request data-service="resume" data-package="{{ slug }}">Choose {{ name }} <svg class="icon"><use href="#i-arrow"/></svg></a>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="next-step">
+      <div>
+        <h3>Ready to take the next step?</h3>
+        <p>Choose your preferred service and complete our online request form. Our team will contact you to discuss your requirements and the information needed to prepare your documents.</p>
+      </div>
+      <a class="btn btn--orange btn--lg" href="?service=resume#request" data-request data-service="resume">Get Started <svg class="icon"><use href="#i-arrow"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<section class="section section--grey" id="interview">
+  <div class="container service-detail">
+    <div class="service-detail__head">
+      <span class="service-card__icon"><svg class="icon"><use href="#i-mic"/></svg></span>
+      <p class="eyebrow">Interview Preparation</p>
+      <h2>Interview Preparation <span class="price-tag">{{ interview.price }}</span></h2>
+      <p class="service-detail__intro">{{ interview.intro }}</p>
+    </div>
+    <div class="service-detail__body">
+      <ul class="ticks ticks--list">
+        {% for p in interview.points %}<li><svg class="icon"><use href="#i-check"/></svg> {{ p }}</li>{% endfor %}
+      </ul>
+      <a class="btn btn--blue btn--lg" href="?service=interview#request" data-request data-service="interview">Book My Interview Session <svg class="icon"><use href="#i-arrow"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="counselling">
+  <div class="container service-detail">
+    <div class="service-detail__head">
+      <span class="service-card__icon"><svg class="icon"><use href="#i-compass"/></svg></span>
+      <p class="eyebrow">Career Counselling</p>
+      <h2>Career Counselling <span class="price-tag price-tag--free">First 15 minutes free</span></h2>
+      <p class="service-detail__intro">{{ counselling.intro }}</p>
+    </div>
+    <div class="service-detail__body">
+      <ul class="ticks ticks--list">
+        {% for p in counselling.points %}<li><svg class="icon"><use href="#i-check"/></svg> {{ p }}</li>{% endfor %}
+      </ul>
+      <table class="price-table">
+        <caption>Pricing</caption>
+        <tbody>
+          {% for name, length, price in counselling.pricing %}
+          <tr><th scope="row">{{ name }}</th><td>{{ length }}</td><td class="price-table__price{% if price == 'Free' %} is-free{% endif %}">{{ price }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <a class="btn btn--blue btn--lg" href="?service=career#request" data-request data-service="career">Book a Free Consultation <svg class="icon"><use href="#i-arrow"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<section class="section section--grey form-section" id="request">
+  <div class="container form-layout">
+    <div class="form-intro">
+      <p class="eyebrow">Request a service</p>
+      <h2>Tell us what you need</h2>
+      <p>Complete this short form and our team will contact you to confirm the details, arrange a time and send your invoice.</p>
+      <ul class="ticks">
+        <li><svg class="icon"><use href="#i-check"/></svg> No payment needed to submit a request</li>
+        <li><svg class="icon"><use href="#i-check"/></svg> We'll confirm everything with you first</li>
+        <li><svg class="icon"><use href="#i-check"/></svg> First career counselling consultation is free</li>
+      </ul>
+      <p class="form-intro__small">{{ price_note }}</p>
+    </div>
+
+    <div class="form-card">
+      {% if sent %}
+        {% include "includes/form_success.html" with title="Request received" again_url="?#request" again_label="Make another request" %}
+      {% else %}
+      <form method="post" action="{% url 'core:career_services' %}#request" enctype="multipart/form-data" novalidate data-service-form>
+        {% csrf_token %}
+        {% include "includes/form_errors.html" %}
+        <div class="hp" aria-hidden="true">{{ form.website }}</div>
+
+        <fieldset class="radio-row{% if form.service.errors %} field--error{% endif %}">
+          <legend>Which service? <span class="req" aria-hidden="true">*</span></legend>
+          <div class="choice-grid choice-grid--stack">
+            {% for opt in form.service %}
+            <label class="choice choice--radio" for="{{ opt.id_for_label }}">
+              {{ opt.tag }}
+              <span class="choice__box" aria-hidden="true"></span>
+              <span class="choice__label">{{ opt.choice_label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          {% for error in form.service.errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+        </fieldset>
+
+        <div class="field-grid">
+          <div class="field--wide" data-show-for="resume">{% include "includes/field.html" with field=form.package %}</div>
+          <div class="field--wide" data-show-for="criteria">{% include "includes/field.html" with field=form.criteria_count %}</div>
+          {% include "includes/field.html" with field=form.full_name wide=True %}
+          {% include "includes/field.html" with field=form.email %}
+          {% include "includes/field.html" with field=form.phone %}
+          {% include "includes/field.html" with field=form.role wide=True %}
+          <div class="field--wide" data-show-for="interview career">{% include "includes/field.html" with field=form.preferred_times %}</div>
+          {% include "includes/field.html" with field=form.details wide=True %}
+        </div>
+
+        <div class="field field--wide{% if form.resume.errors %} field--error{% endif %}">
+          <span class="field__label" id="service-resume-label">{{ form.resume.label }} <span class="opt">(optional)</span></span>
+          <label class="upload" for="{{ form.resume.id_for_label }}">
+            <input type="file" name="{{ form.resume.html_name }}" id="{{ form.resume.id_for_label }}" accept="{{ form.resume.field.widget.attrs.accept }}" aria-labelledby="service-resume-label" aria-describedby="service-resume-help">
+            <span class="upload__icon"><svg class="icon"><use href="#i-upload"/></svg></span>
+            <span class="upload__text" data-upload-text><strong>Choose a file</strong> or drag it here</span>
+          </label>
+          <p class="field__help" id="service-resume-help">{{ form.resume.help_text }}</p>
+          {% for error in form.resume.errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div class="consent{% if form.consent.errors %} field--error{% endif %}">
+          <label class="choice choice--consent" for="{{ form.consent.id_for_label }}">
+            {{ form.consent }}
+            <span class="choice__box" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></span>
+            <span class="choice__label">I agree to SD Recruitment storing my details and contacting me about this request, as described in the <a href="{% url 'core:privacy' %}" target="_blank">Privacy Policy</a>. <span class="req" aria-hidden="true">*</span></span>
+          </label>
+          {% for error in form.consent.errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <button class="btn btn--orange btn--lg btn--block" type="submit">Send request <svg class="icon"><use href="#i-arrow"/></svg></button>
+        <p class="form-note"><svg class="icon"><use href="#i-lock"/></svg> No payment is taken online. We'll confirm the service and price with you before any work starts.</p>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

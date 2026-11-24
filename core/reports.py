@@ -13,11 +13,12 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.utils import timezone
 
-from .models import CandidateRegistration, ContactEnquiry, VacancyEnquiry
+from .models import CandidateRegistration, ContactEnquiry, ServiceRequest, VacancyEnquiry
 
 CANDIDATES = "candidates"
 VACANCIES = "vacancies"
 CONTACTS = "contact"
+SERVICES = "services"
 CSV, PDF = "csv", "pdf"
 
 REPORT_CARDS = {
@@ -25,6 +26,8 @@ REPORT_CARDS = {
                  "candidateregistration"),
     VACANCIES: ("Vacancies", "Vacancies submitted by employers, with position, industry, location and status.",
                 "vacancyenquiry"),
+    SERVICES: ("Service requests", "Resume writing, interview preparation and career counselling requests.",
+               "servicerequest"),
     CONTACTS: ("Contact enquiries", "General messages sent from the Contact Us page.", "contactenquiry"),
 }
 FORMATS = [(CSV, "CSV"), (PDF, "PDF")]
@@ -118,6 +121,27 @@ REPORTS = {
             ("Consent to contact", lambda e: yes_no(e.consent), None),
             ("Status", lambda e: e.get_status_display(), 17),
             ("Assigned to", handler, 17),
+            ("Internal notes", lambda e: e.notes, None),
+        ],
+    },
+    SERVICES: {
+        "title": "Service requests",
+        "queryset": lambda: ServiceRequest.objects.select_related("assigned_to"),
+        "statuses": ServiceRequest.STATUSES,
+        "columns": [
+            ("Received", received, 18),
+            ("Service", lambda e: e.short_service, 30),
+            ("Resume package", lambda e: e.get_package_display() if e.package else "", 44),
+            ("Number of criteria", lambda e: e.criteria_count or "", None),
+            ("Full name", lambda e: e.full_name, 30),
+            ("Phone number", lambda e: e.phone, 24),
+            ("Email address", lambda e: e.email, 42),
+            ("Current or target role", lambda e: e.role, None),
+            ("Preferred days and times", lambda e: e.preferred_times, 32),
+            ("Anything else", lambda e: e.details, None),
+            ("Resume provided", lambda e: yes_no(e.resume), None),
+            ("Status", lambda e: e.get_status_display(), 18),
+            ("Assigned to", handler, 18),
             ("Internal notes", lambda e: e.notes, None),
         ],
     },

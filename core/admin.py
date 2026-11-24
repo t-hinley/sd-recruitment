@@ -12,7 +12,8 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from . import airtable
-from .models import AIRTABLE_FAILED, AIRTABLE_SENT, CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
+from .models import (AIRTABLE_FAILED, AIRTABLE_SENT, CandidateRegistration, ContactEnquiry, Job, ServiceRequest,
+                     VacancyEnquiry)
 
 
 def person(user):
@@ -240,6 +241,35 @@ class ContactEnquiryAdmin(EnquiryAdmin):
         ("Enquiry", {"fields": ("name", ("email_link", "phone_link"), "enquirer_type", "message", "received_full")}),
         FOLLOW_UP,
     )
+
+
+@admin.register(ServiceRequest)
+class ServiceRequestAdmin(EnquiryAdmin):
+    list_display = ("full_name", "service_summary", "preferred_times", "cv", "status", "handler", "received")
+    list_filter = ("status", AssignedFilter, "service", "package", "created_at")
+    search_fields = ("full_name", "email", "phone", "role", "preferred_times", "details", "notes")
+    submitted_fields = ("service_summary", "full_name", "email_link", "phone_link", "role", "preferred_times",
+                        "details", "resume_link", "consent", "received_full")
+    fieldsets = (
+        ("Request", {"fields": ("service_summary", "full_name", ("email_link", "phone_link"), "role",
+                                "preferred_times", "details", "resume_link", ("consent", "received_full"))}),
+        FOLLOW_UP,
+    )
+
+    @admin.display(description="Service", ordering="service")
+    def service_summary(self, obj):
+        return obj.summary
+
+    @admin.display(description="Resume", boolean=True)
+    def cv(self, obj):
+        return bool(obj.resume)
+
+    @admin.display(description="Current resume")
+    def resume_link(self, obj):
+        if not obj.resume:
+            return format_html('<span class="sdmuted">Not provided</span>')
+        return format_html('<a class="button" href="{}">Download resume</a> <span class="sdmuted">{}</span>',
+                           reverse("admin:service_resume_download", args=[obj.pk]), obj.resume_name)
 
 
 @admin.register(Job)

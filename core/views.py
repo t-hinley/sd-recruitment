@@ -10,8 +10,8 @@ from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
 
 from . import airtable, content
-from .forms import CandidateForm, ContactForm, VacancyForm
-from .models import CandidateRegistration, Job
+from .forms import CandidateForm, ContactForm, ServiceRequestForm, VacancyForm
+from .models import CandidateRegistration, Job, ServiceRequest
 from .notifications import send_enquiry_notification
 
 SERVICE_KEYS = {key for key, _label in CandidateRegistration.SUPPORT_CHOICES}
@@ -115,25 +115,61 @@ def contact(request):
     return render(request, "core/contact.html", {"form": form, "sent": request.GET.get("sent")})
 
 
+def career_services(request):
+    """Resume writing, interview preparation and career counselling, with prices and one request form.
+    ?service=resume|interview|career (and &package=... for resumes) pre-selects the form."""
+    services = {k for k, _ in ServiceRequest.SERVICES}
+    packages = {k for k, _ in ServiceRequest.PACKAGES}
+    initial = {}
+    if request.GET.get("service") in services:
+        initial["service"] = request.GET["service"]
+    if request.GET.get("package") in packages:
+        initial.update(service="resume", package=request.GET["package"])
+    form = ServiceRequestForm(initial=initial or None)
+    if request.method == "POST":
+        form = ServiceRequestForm(request.POST, request.FILES)
+        if form.is_valid():
+            obj = form.save()
+            send_enquiry_notification(obj, request)
+            messages.success(request, "Thank you – your request has been received. We'll contact you to "
+                                      "confirm the details and arrange a time.")
+            return redirect(reverse("core:career_services") + "?sent=1#request")
+    return render(request, "core/career_services.html", {
+        "form": form,
+        "sent": request.GET.get("sent"),
+        "packages": content.RESUME_PACKAGES,
+        "interview": content.INTERVIEW_SERVICE,
+        "counselling": content.COUNSELLING_SERVICE,
+        "price_note": content.PRICE_NOTE,
+    })
+
+
 def privacy(request):
     return render(request, "core/privacy.html")
 
 
-def resume_download(request, pk):
-    """Staff-only: open a candidate's CV. Wrapped in admin_view() in core/admin_site.py, so only
-    signed-in staff with permission to view candidates can reach it."""
-    if not request.user.has_perm("core.view_candidateregistration"):
+RESUME_SOURCES = {
+    "candidate": (CandidateRegistration, "core.view_candidateregistration", "CV"),
+    "service": (ServiceRequest, "core.view_servicerequest", "Resume"),
+}
+
+
+def resume_download(request, pk, kind="candidate"):
+    """Staff-only: open an uploaded CV / resume. Wrapped in admin_view() in core/admin_site.py, so only
+    signed-in staff with permission to view those records can reach it."""
+    model, perm, label = RESUME_SOURCES.get(kind, RESUME_SOURCES["candidate"])
+    if not request.user.has_perm(perm):
         raise Http404
-    reg = get_object_or_404(CandidateRegistration, pk=pk)
-    if not reg.resume:
+    obj = get_object_or_404(model, pk=pk)
+    if not obj.resume:
         raise Http404
     try:
-        handle = reg.resume.open("rb")
+        handle = obj.resume.open("rb")
     except FileNotFoundError:
         raise Http404
-    ext = Path(reg.resume.name).suffix.lower()
-    safe_name = "".join(c for c in reg.full_name if c.isalnum() or c in " -_").strip().replace(" ", "-") or "candidate"
-    response = FileResponse(handle, as_attachment=True, filename=f"CV-{safe_name}{ext}",
+    ext = Path(obj.resume.name).suffix.lower()
+    safe_name = "".join(c for c in obj.full_name if c.isalnum() or c in " -_").strip().replace(" ", "-") or "candidate"
+    response = FileResponse(handle, as_attachment=True, filename=f"{label}-{safe_name}{ext}",
                             content_type=mimetypes.guess_type(f"x{ext}")[0] or "application/octet-stream")
     response["X-Content-Type-Options"] = "nosniff"
     response["Cache-Control"] = "private, no-store"

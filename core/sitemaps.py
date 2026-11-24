@@ -6,7 +6,8 @@ class StaticViewSitemap(Sitemap):
     changefreq = "monthly"
 
     def items(self):
-        return ["core:home", "core:employers", "core:candidates", "core:about", "core:contact", "core:privacy"]
+        return ["core:home", "core:employers", "core:candidates", "core:career_services", "core:about", "core:contact",
+                "core:privacy"]
 
     def priority(self, item):
         return {"core:home": 1.0, "core:privacy": 0.3}.get(item, 0.8)

@@ -216,3 +216,67 @@ class ContactEnquiry(FollowUp):
 
     def __str__(self):
         return f"{self.name} – {self.get_enquirer_type_display()}"
+
+
+class ServiceRequest(FollowUp):
+    """Request form on the Career Services page (resume writing, interview preparation, career counselling).
+    There's no online payment: the team contacts the person to confirm, schedule and invoice."""
+
+    SERVICES = [
+        ("resume", "Resume writing"),
+        ("interview", "Interview preparation ($95, 45 minutes)"),
+        ("career", "Career counselling (free 15-minute consultation)"),
+    ]
+    PACKAGES = [
+        ("student", "Student Resume – $50"),
+        ("basic", "Basic Resume – $95"),
+        ("professional", "Professional Resume – $200"),
+        ("executive", "Executive Resume – $350"),
+        ("criteria", "Selection Criteria Writing – $35 per criterion"),
+    ]
+    STATUSES = [
+        ("new", "New"),
+        ("contacted", "Contacted"),
+        ("booked", "Booked / in progress"),
+        ("completed", "Completed"),
+        ("closed", "Closed"),
+    ]
+
+    service = models.CharField("Service", max_length=12, choices=SERVICES)
+    package = models.CharField("Resume package", max_length=14, choices=PACKAGES, blank=True)
+    criteria_count = models.PositiveSmallIntegerField("Number of selection criteria", null=True, blank=True)
+    full_name = models.CharField(max_length=120)
+    email = models.EmailField("Email address")
+    phone = models.CharField("Phone number", max_length=30)
+    role = models.CharField("Current or target role", max_length=160, blank=True)
+    preferred_times = models.CharField("Preferred days and times", max_length=200, blank=True)
+    details = models.TextField("Anything else we should know", blank=True)
+    resume = models.FileField("Current resume", upload_to=resume_path, blank=True)
+    resume_name = models.CharField("Original file name", max_length=200, blank=True, editable=False)
+    consent = models.BooleanField("Consent to be contacted", default=False)
+    status = models.CharField(max_length=12, choices=STATUSES, default="new")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "service request"
+        verbose_name_plural = "service requests"
+
+    def __str__(self):
+        return f"{self.full_name} – {self.short_service}"
+
+    @property
+    def short_service(self):
+        return {"resume": "Resume writing", "interview": "Interview preparation",
+                "career": "Career counselling"}.get(self.service, self.service)
+
+    @property
+    def summary(self):
+        """e.g. 'Resume writing · Selection Criteria Writing – $35 per criterion × 4'."""
+        parts = [self.short_service]
+        if self.service == "resume" and self.package:
+            text = self.get_package_display()
+            if self.package == "criteria" and self.criteria_count:
+                text += f" × {self.criteria_count}"
+            parts.append(text)
+        return " · ".join(parts)

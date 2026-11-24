@@ -17,6 +17,7 @@ the same way.
 | **About Us** `/about/` | Company profile, recruitment approach (4 steps), values and industries. |
 | **Employers** `/employers/` | "Find the Right People for Your Business.", why use a recruitment agency (6 benefits), the industries grid, the 5-step process and the **Submit a Vacancy** form. The button is at the top and the form is at the bottom. |
 | **Candidates** `/candidates/` | "Your Next Opportunity Starts Here.", why work with a recruiter (5 benefits), 3 career support cards, current opportunities, what happens after registering, and the **Register Your Interest** form with an optional CV upload. |
+| **Career Services** `/career-services/` | Resume packages (Student $50, Basic $95, Professional $200, Executive $350, Selection Criteria $35 per criterion), Interview Preparation ($95, 45 minutes) and Career Counselling (first 15 minutes free, follow-up 30 minutes $65), with one **service request** form. Linked from the Candidates page cards and the footer. |
 | **Contact Us** `/contact/` | Contact details and a short general enquiry form. |
 | **Privacy Policy** `/privacy/` | The privacy notice that the candidate consent tick box links to. |
 
@@ -67,6 +68,7 @@ The admin has the same design as the other SD admins. It includes:
 - **Candidates, Vacancies, Contact enquiries.** What the visitor submitted is read-only. Staff
   update the status, *Assigned to* and internal notes. Candidate records have a **Download CV**
   button.
+- **Service requests:** requests from the Career Services page (service, resume package, preferred times, optional current resume). No online payment: the team contacts the person to confirm and invoice. Admin only (not sent to Airtable).
 - **Current opportunities:** add, edit or hide the jobs shown on the Candidates page. Each job gets
   an *Apply* button that opens the form linked to that job.
 - **Airtable status** on each vacancy and candidate (Sent, Failed or Not set up), with a *send again* action.
@@ -81,7 +83,7 @@ that folder, so a CV can only be downloaded by signed-in staff through the admin
 candidate also deletes their CV file.
 
 ## Editing content
-- **Wording, benefits, industries, steps and service cards:** `core/content.py`
+- **Wording, benefits, industries, steps, service cards and Career Services prices:** `core/content.py`
 - **Contact details** (phone, email, address, hours, LinkedIn): set them in `.env`. See
   `.env.example`. Anything left empty is hidden.
 - **Logo:** `static/images/` (made from the supplied SD Recruitment logo artwork).
