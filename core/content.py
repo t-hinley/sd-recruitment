@@ -53,7 +53,7 @@ ABOUT_APPROACH = [
 ABOUT_VALUES = [
     ("shield", "Integrity", "Honest advice and realistic expectations for employers and candidates."),
     ("users", "Respect", "Every candidate and client is treated professionally and with care."),
-    ("target", "Quality", "A focus on the right match rather than the most applications."),
+    ("dartboard", "Quality", "A focus on the right match rather than the most applications."),
     ("link", "Partnership", "Relationships that continue well beyond a single vacancy."),
 ]
 
@@ -101,7 +101,7 @@ CANDIDATE_BENEFITS = [
      "Hear about suitable vacancies, including roles that may not be widely advertised."),
     ("route", "Guidance throughout the process",
      "Get support with applications, interview arrangements and communication with employers."),
-    ("target", "A better match",
+    ("dartboard", "A better match",
      "Discuss your skills, experience and preferences so we can consider roles that align with your goals."),
     ("chat", "Career advice and feedback",
      "Receive practical guidance to help you present your experience and prepare for opportunities."),
