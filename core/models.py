@@ -234,8 +234,8 @@ class ContactEnquiry(FollowUp):
 
     class Meta:
         ordering = ["-created_at"]
-        verbose_name = "contact enquiry"
-        verbose_name_plural = "contact enquiries"
+        verbose_name = "general enquiry"
+        verbose_name_plural = "general enquiries"
 
     def __str__(self):
         return f"{self.name} – {self.get_enquirer_type_display()}"

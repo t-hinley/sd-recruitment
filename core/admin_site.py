@@ -52,7 +52,7 @@ class SDAdminSite(admin.AdminSite):
 
     MAIN = ["candidateregistration", "vacancyenquiry", "contactenquiry", "job"]
     SHORT = {"candidateregistration": "Candidates", "vacancyenquiry": "Vacancies",
-             "contactenquiry": "Contact enquiries", "job": "Current opportunities"}  # fit the sidebar
+             "contactenquiry": "General enquiries", "job": "Current opportunities"}  # fit the sidebar
     SETTINGS = ["user", "group"]
 
     # ---- pages -------------------------------------------------------------
@@ -192,7 +192,7 @@ class SDAdminSite(admin.AdminSite):
              cand_url + "?status__exact=new"),
             ("New vacancies", vacs.filter(status="new").count(), "vacancyenquiry", "orange",
              vac_url + "?status__exact=new"),
-            ("New contact enquiries", contacts.filter(status="new").count(), "contactenquiry", "orange",
+            ("New general enquiries", contacts.filter(status="new").count(), "contactenquiry", "orange",
              contact_url + "?status__exact=new"),
             ("Unassigned (open)", unassigned, "group", "orange", cand_url + "?assigned=none"),
         ]
@@ -244,7 +244,7 @@ class SDAdminSite(admin.AdminSite):
         recent += [{"name": e.company, "email": e.email, "kind": "Vacancy · " + e.position, "message": e.details,
                     "status": e.status, "status_label": e.get_status_display(), "when": e.created_at,
                     "url": reverse("admin:core_vacancyenquiry_change", args=[e.pk])} for e in vacs[:6]]
-        recent += [{"name": e.name, "email": e.email, "kind": "Contact · " + e.get_enquirer_type_display(),
+        recent += [{"name": e.name, "email": e.email, "kind": "General enquiry",
                     "message": e.message, "status": e.status, "status_label": e.get_status_display(),
                     "when": e.created_at, "url": reverse("admin:core_contactenquiry_change", args=[e.pk])}
                    for e in contacts[:6]]
@@ -263,7 +263,7 @@ class SDAdminSite(admin.AdminSite):
                 for one, many, n, url in (
                     ("candidate", "candidates", open_(cands).filter(assigned_to=request.user).count(), cand_url),
                     ("vacancy", "vacancies", open_(vacs).filter(assigned_to=request.user).count(), vac_url),
-                    ("contact enquiry", "contact enquiries",
+                    ("general enquiry", "general enquiries",
                      open_(contacts).filter(assigned_to=request.user).count(), contact_url),
                 )) if p["n"]],
             "cand_status_rows": cand_status_rows, "cand_total": cands.count(),

@@ -15,7 +15,7 @@ FIELDS = {
     CandidateRegistration: ("New candidate registration", ["full_name", "phone", "email", "location", "visa_type",
                                                           "preferred_location", "industry", "position_sought",
                                                           "employment_types", "experience", "job"]),
-    ContactEnquiry: ("New contact enquiry", ["name", "email", "phone", "enquirer_type", "message"]),
+    ContactEnquiry: ("New general enquiry", ["name", "email", "phone", "message"]),
 }
 
 

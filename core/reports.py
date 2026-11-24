@@ -25,7 +25,7 @@ REPORT_CARDS = {
                  "candidateregistration"),
     VACANCIES: ("Vacancies", "Vacancies submitted by employers, with position, industry, location and status.",
                 "vacancyenquiry"),
-    CONTACTS: ("Contact enquiries", "General messages sent from the Contact Us page.", "contactenquiry"),
+    CONTACTS: ("General enquiries", "General messages sent from the Contact Us page.", "contactenquiry"),
 }
 FORMATS = [(CSV, "CSV"), (PDF, "PDF")]
 FORMAT_HELP = {CSV: "Opens in Excel. Every field.", PDF: "Ready to print or share. Main fields."}
@@ -124,7 +124,7 @@ REPORTS = {
         ],
     },
     CONTACTS: {
-        "title": "Contact enquiries",
+        "title": "General enquiries",
         "queryset": lambda: ContactEnquiry.objects.select_related("assigned_to"),
         "statuses": ContactEnquiry.STATUSES,
         "columns": [

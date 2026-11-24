@@ -239,14 +239,18 @@ class CandidateRegistrationAdmin(AirtableAdminMixin, EnquiryAdmin):
 
 @admin.register(ContactEnquiry)
 class ContactEnquiryAdmin(EnquiryAdmin):
-    list_display = ("name", "enquirer_type", "email", "status", "handler", "received")
-    list_filter = ("status", AssignedFilter, "enquirer_type", "created_at")
+    list_display = ("name", "email", "message_preview", "status", "handler", "received")
+    list_filter = ("status", AssignedFilter, "created_at")
     search_fields = ("name", "email", "phone", "message", "notes")
-    submitted_fields = ("name", "email_link", "phone_link", "enquirer_type", "message", "received_full")
+    submitted_fields = ("name", "email_link", "phone_link", "message", "received_full")
     fieldsets = (
-        ("Enquiry", {"fields": ("name", ("email_link", "phone_link"), "enquirer_type", "message", "received_full")}),
+        ("Enquiry", {"fields": ("name", ("email_link", "phone_link"), "message", "received_full")}),
         FOLLOW_UP,
     )
+
+    @admin.display(description="Message")
+    def message_preview(self, obj):
+        return (obj.message[:80] + "…") if len(obj.message) > 80 else obj.message
 
 
 @admin.register(Job)
