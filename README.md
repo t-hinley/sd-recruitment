@@ -34,9 +34,10 @@ The Candidates form also has the items the Candidate Website Content document as
 in the Airtable form: *What can we help with?* (job opportunities, resume support, interview
 preparation, career counselling), the optional CV upload and the consent tick box.
 
-Each submission is saved on the website first, then copied to Airtable, into the same table the Airtable
-forms use (`core/airtable.py`). Fields are matched by their Airtable field ID, so renaming a column in
-Airtable doesn't break the copy. If Airtable can't be reached, the visitor still sees "Thank you", the
+Each submission is saved on the website first, then copied to Airtable (`core/airtable.py`): vacancies to
+`AIRTABLE_EMPLOYER_TABLE` and candidates to `AIRTABLE_TALENT_TABLE`. Today both Airtable forms share one
+table, where columns are matched by field ID (renaming a column doesn't break the copy). A form moved to
+a table of its own is matched by column name, using the Airtable form labels. If Airtable can't be reached, the visitor still sees "Thank you", the
 record shows **Failed** in the admin, and it is sent again by the admin action *Send selected to
 Airtable again* or by `manage.py sync_airtable`. Contact Us messages stay on the website only.
 

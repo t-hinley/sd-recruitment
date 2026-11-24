@@ -190,8 +190,10 @@ tar czf ~/sdrecruitment-backup-$(date +%F).tar.gz -C /srv/sdrecruitment db.sqlit
 
 1. Create a token at <https://airtable.com/create/tokens>: scope **data.records:write**, access
    **SD Recruitment** base only. Copy it.
-2. `nano /srv/sdrecruitment/.env` and set `AIRTABLE_TOKEN=<the token>` (the base and table IDs are
-   already filled in).
+2. `nano /srv/sdrecruitment/.env` and set `AIRTABLE_TOKEN=<the token>`. Check the two table lines:
+   `AIRTABLE_EMPLOYER_TABLE` (Employer Enquiry Form) and `AIRTABLE_TALENT_TABLE` (Talent Registration
+   Form). Today both are `tblZaBP5px3dqWuaD`; if the client gives a form its own table, put that table's
+   ID (starts with `tbl`, shown in the address bar) on its line.
 3. `sudo systemctl restart sdrecruitment`
 4. Send anything saved before Airtable was switched on: `cd /srv/sdrecruitment && .venv/bin/python manage.py sync_airtable`
 5. Automatic retry every 15 minutes: run `crontab -e`, add this line at the bottom and save:

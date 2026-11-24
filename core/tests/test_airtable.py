@@ -13,7 +13,8 @@ STATIC = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
-ON = dict(AIRTABLE_TOKEN="patTEST", AIRTABLE_BASE_ID="appv3PA1WBgRGxeX5", AIRTABLE_TABLE="tblZaBP5px3dqWuaD",
+ON = dict(AIRTABLE_TOKEN="patTEST", AIRTABLE_BASE_ID="appv3PA1WBgRGxeX5",
+          AIRTABLE_EMPLOYER_TABLE="tblZaBP5px3dqWuaD", AIRTABLE_TALENT_TABLE="tblZaBP5px3dqWuaD",
           STORAGES=STATIC, EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 
 
@@ -114,6 +115,52 @@ class AirtableTests(TestCase):
         v = VacancyEnquiry.objects.get()
         self.assertTrue(airtable.push(v))
         self.assertEqual(len(self.calls), 1)
+
+
+@override_settings(**{**ON, "AIRTABLE_EMPLOYER_TABLE": "tblEmployers0001", "AIRTABLE_TALENT_TABLE": "Talent Registrations"})
+class SeparateTablesTests(TestCase):
+    """When each Airtable form has its own table, records go there with columns named as the form labels."""
+
+    def setUp(self):
+        self.calls = []
+
+        def fake_urlopen(req, timeout=None, context=None):
+            self.calls.append((req.full_url, json.loads(req.data.decode())))
+            return FakeResponse({"records": [{"id": "recNEW"}]})
+
+        patcher = mock.patch("urllib.request.urlopen", side_effect=fake_urlopen)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_vacancy_goes_to_employer_table_by_column_name(self):
+        self.client.post(reverse("core:employers"), VACANCY)
+        url, body = self.calls[0]
+        self.assertEqual(url, "https://api.airtable.com/v0/appv3PA1WBgRGxeX5/tblEmployers0001")
+        f = body["records"][0]["fields"]
+        self.assertEqual(f["Company Name"], "Cafe Co")
+        self.assertEqual(f["Contact Person"], "Sam Lee")
+        self.assertEqual(f["Mobile Number"], "0411 111 111")
+        self.assertEqual(f["Position Recruiting For"], "Restaurant Manager")
+        self.assertEqual(f["Employment Type"], ["Full Time", "Casual"])
+        self.assertEqual(f["Number of Vacancies"], "2-5")
+        self.assertEqual(f["Work Location"], "Fremantle WA")
+        self.assertIs(f["Consent to Contact"], True)
+        self.assertFalse(any(k.startswith("fld") for k in f))
+
+    def test_candidate_goes_to_talent_table_by_column_name(self):
+        self.client.post(reverse("core:candidates"), candidate_data())
+        url, body = self.calls[0]
+        self.assertEqual(url, "https://api.airtable.com/v0/appv3PA1WBgRGxeX5/Talent%20Registrations")
+        f = body["records"][0]["fields"]
+        self.assertEqual(f["Full Name"], "Jane Citizen")
+        self.assertEqual(f["Visa Type"], "Student Visa (Subclass 500)")
+        self.assertEqual(f["Industry / Job Category"], "Aged Care & Disability")
+        self.assertEqual(f["Relevant Work Experience"], "1–3 Years")
+        self.assertNotIn("Consent to Contact", f)  # the Talent Registration Form has no such question
+
+    def test_old_single_table_setting_still_works(self):
+        from django.conf import settings
+        self.assertTrue(settings.AIRTABLE_EMPLOYER_TABLE)  # settings module defines both from AIRTABLE_TABLE
 
 
 @override_settings(AIRTABLE_TOKEN="", STORAGES=STATIC)

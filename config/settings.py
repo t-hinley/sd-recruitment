@@ -191,7 +191,10 @@ FILE_UPLOAD_PERMISSIONS = 0o640
 # ---------------------------------------------------------------------------
 AIRTABLE_TOKEN = os.environ.get("AIRTABLE_TOKEN", "")
 AIRTABLE_BASE_ID = os.environ.get("AIRTABLE_BASE_ID", "appv3PA1WBgRGxeX5").strip()
-AIRTABLE_TABLE = os.environ.get("AIRTABLE_TABLE", "tblZaBP5px3dqWuaD").strip()
+# One table per Airtable form (table ID "tbl…" or the table's name). Today both forms share one table.
+_AIRTABLE_SHARED = os.environ.get("AIRTABLE_TABLE", "tblZaBP5px3dqWuaD").strip()  # older single setting
+AIRTABLE_EMPLOYER_TABLE = os.environ.get("AIRTABLE_EMPLOYER_TABLE", _AIRTABLE_SHARED).strip()  # Employer Enquiry Form
+AIRTABLE_TALENT_TABLE = os.environ.get("AIRTABLE_TALENT_TABLE", _AIRTABLE_SHARED).strip()  # Talent Registration Form
 AIRTABLE_TIMEOUT = int(os.environ.get("AIRTABLE_TIMEOUT", "8"))
 
 # ---------------------------------------------------------------------------

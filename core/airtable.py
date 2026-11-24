@@ -5,12 +5,11 @@ always sees "Thank you". The copy in Airtable is created straight afterwards. If
 reached, the record is marked "Failed" and sent again later (admin action "Send to Airtable again" or
 `manage.py sync_airtable`).
 
-Both Airtable forms (Employer Enquiry Form and Talent Registration Form) save into the same table, so
-both website forms do too. Fields are addressed by their Airtable field ID, exactly as the Airtable
-forms map them, so renaming a column in Airtable does not break the website.
+Each website form goes to the table set for its Airtable form. Today both Airtable forms share one
+table; see SHARED_TABLE below for how columns are matched.
 
-Settings (in .env): AIRTABLE_TOKEN, AIRTABLE_BASE_ID, AIRTABLE_TABLE. With the token empty, the
-integration is switched off.
+Settings (in .env): AIRTABLE_TOKEN, AIRTABLE_BASE_ID, AIRTABLE_EMPLOYER_TABLE (Employer Enquiry Form)
+and AIRTABLE_TALENT_TABLE (Talent Registration Form). With the token empty, the integration is off.
 """
 
 import json
@@ -26,30 +25,52 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 API = "https://api.airtable.com/v0"
 
-# Airtable field IDs (table "tblZaBP5px3dqWuaD"), read from the two Airtable forms.
-F = {
-    "name": "fldNazuVVEevqlwIf",            # Enquiry / Registration Name (primary field)
-    "phone": "fldDXTuMrsq5riVPU",           # Phone Number
-    "email": "fldjEWSC9V0b31LEf",           # Email Address
-    "location": "fldaFBs37NRkuw38W",        # Country / Location (employer form: "Work Location")
-    "company": "flde6QS0zw4mK3vcV",         # Organisation / Company Name
-    "job_title": "fldg9tVfNK7REj52P",       # Position / Job Title (employer form: "Contact Person")
-    "employer_industry": "fldZzLlrg8bgGdkpY",  # Industry / Sector
-    "staff_required": "fldg2R4etvUrg9WBQ",  # Number of Staff Required ("Number of Vacancies")
-    "additional": "fld93WIxFp36uXcwo",      # Additional Information ("Additional Requirements or Comments")
-    "consent": "fldt1MwrPLURa3fJo",         # Consent to Contact
-    "employment_type": "fldlKUehNaiNjxa90",  # Employment Type (multiple select)
-    "position_recruiting": "fldRtIJEPWV15RmSv",  # Position Recruiting For (single select)
-    "preferred_location": "fldj8QcpglaHe7K1e",   # Preferred Job Location
-    "candidate_industry": "fld8DCHC9mxzlYQyN",   # Industry / Job Category
-    "positions_interested": "fld0UHh3D9L21yqPx",  # Position(s) Interested In
-    "experience": "fld2MpuDbls6jFRt0",      # Relevant Work Experience
-    "visa": "fldlOQ61PTPvjfZkt",            # Visa Type
+# The table both Airtable forms save into today. While a form's table (AIRTABLE_EMPLOYER_TABLE /
+# AIRTABLE_TALENT_TABLE) is this one, columns are addressed by their field ID, exactly as the Airtable
+# forms map them, so renaming a column doesn't break anything. If a form is moved to its own table,
+# columns are addressed by NAME instead: the column names below, which are the Airtable form labels.
+SHARED_TABLE = "tblZaBP5px3dqWuaD"
+
+# (website value, field ID in the shared table, column name in a table of its own)
+EMPLOYER_FIELDS = [
+    ("company", "flde6QS0zw4mK3vcV", "Company Name"),          # Organisation / Company Name
+    ("industry", "fldZzLlrg8bgGdkpY", "Industry / Sector"),
+    ("contact_name", "fldg9tVfNK7REj52P", "Contact Person"),   # shared table: "Position / Job Title"
+    ("phone", "fldDXTuMrsq5riVPU", "Mobile Number"),           # shared table: "Phone Number"
+    ("email", "fldjEWSC9V0b31LEf", "Email Address"),
+    ("position", "fldRtIJEPWV15RmSv", "Position Recruiting For"),
+    ("employment_types", "fldlKUehNaiNjxa90", "Employment Type"),
+    ("positions_count", "fldg2R4etvUrg9WBQ", "Number of Vacancies"),  # shared table: "Number of Staff Required"
+    ("location", "fldaFBs37NRkuw38W", "Work Location"),        # shared table: "Country / Location"
+    ("details", "fld93WIxFp36uXcwo", "Additional Requirements or Comments"),  # shared: "Additional Information"
+    ("consent", "fldt1MwrPLURa3fJo", "Consent to Contact"),
+]
+TALENT_FIELDS = [
+    ("full_name", "fldNazuVVEevqlwIf", "Full Name"),           # shared table: "Enquiry / Registration Name"
+    ("phone", "fldDXTuMrsq5riVPU", "Phone Number"),
+    ("email", "fldjEWSC9V0b31LEf", "Email Address"),
+    ("location", "fldaFBs37NRkuw38W", "Country / Location"),
+    ("visa_type", "fldlOQ61PTPvjfZkt", "Visa Type"),
+    ("preferred_location", "fldj8QcpglaHe7K1e", "Preferred Job Location"),
+    ("industry", "fld8DCHC9mxzlYQyN", "Industry / Job Category"),
+    ("position_sought", "fld0UHh3D9L21yqPx", "Position(s) Interested In"),
+    ("employment_types", "fldlKUehNaiNjxa90", "Employment Type"),
+    ("experience", "fld2MpuDbls6jFRt0", "Relevant Work Experience"),
+]
+# Only in the shared table (the Talent Registration Form has no such question):
+SHARED_ONLY = {
+    "employer_name": "fldNazuVVEevqlwIf",   # Enquiry / Registration Name: filled with the company name
+    "talent_consent": "fldt1MwrPLURa3fJo",  # Consent to Contact
 }
 
 
 def enabled():
-    return bool(settings.AIRTABLE_TOKEN and settings.AIRTABLE_BASE_ID and settings.AIRTABLE_TABLE)
+    return bool(settings.AIRTABLE_TOKEN and settings.AIRTABLE_BASE_ID)
+
+
+def table_for(obj):
+    from .models import VacancyEnquiry
+    return settings.AIRTABLE_EMPLOYER_TABLE if isinstance(obj, VacancyEnquiry) else settings.AIRTABLE_TALENT_TABLE
 
 
 def _clean(fields):
@@ -57,39 +78,32 @@ def _clean(fields):
     return {k: v for k, v in fields.items() if v not in ("", None, [])}
 
 
+def _value(obj, attr):
+    value = getattr(obj, attr)
+    if attr == "employment_types":
+        return list(value or [])
+    if attr == "consent":
+        return bool(value)
+    return value
+
+
 def fields_for(obj):
     """Website record -> Airtable fields, mirroring what each Airtable form writes."""
     from .models import CandidateRegistration, VacancyEnquiry
     if isinstance(obj, VacancyEnquiry):
-        return _clean({
-            F["name"]: obj.company,             # the Airtable form leaves this empty; the company names the row
-            F["company"]: obj.company,
-            F["employer_industry"]: obj.industry,
-            F["job_title"]: obj.contact_name,   # the Airtable form maps "Contact Person" here
-            F["phone"]: obj.phone,
-            F["email"]: obj.email,
-            F["position_recruiting"]: obj.position,
-            F["employment_type"]: list(obj.employment_types or []),
-            F["staff_required"]: obj.positions_count,
-            F["location"]: obj.location,
-            F["additional"]: obj.details,
-            F["consent"]: bool(obj.consent),
-        })
-    if isinstance(obj, CandidateRegistration):
-        return _clean({
-            F["name"]: obj.full_name,
-            F["phone"]: obj.phone,
-            F["email"]: obj.email,
-            F["location"]: obj.location,
-            F["visa"]: obj.visa_type,
-            F["preferred_location"]: obj.preferred_location,
-            F["candidate_industry"]: obj.industry,
-            F["positions_interested"]: obj.position_sought,
-            F["employment_type"]: list(obj.employment_types or []),
-            F["experience"]: obj.experience,
-            F["consent"]: bool(obj.consent),
-        })
-    raise TypeError(f"{type(obj).__name__} is not sent to Airtable")
+        mapping = EMPLOYER_FIELDS
+    elif isinstance(obj, CandidateRegistration):
+        mapping = TALENT_FIELDS
+    else:
+        raise TypeError(f"{type(obj).__name__} is not sent to Airtable")
+    shared = table_for(obj) == SHARED_TABLE
+    fields = {(fid if shared else name): _value(obj, attr) for attr, fid, name in mapping}
+    if shared:
+        if isinstance(obj, VacancyEnquiry):
+            fields[SHARED_ONLY["employer_name"]] = obj.company  # the Airtable form leaves this empty
+        else:
+            fields[SHARED_ONLY["talent_consent"]] = bool(obj.consent)
+    return _clean(fields)
 
 
 def _ssl_context():
@@ -126,14 +140,16 @@ def _request(method, url, payload=None):
         hint = ""
         if e.code in (401, 403, 404):
             hint = (" (check AIRTABLE_TOKEN, that the token has data.records:write access to base "
-                    f"{settings.AIRTABLE_BASE_ID}, and AIRTABLE_TABLE={settings.AIRTABLE_TABLE!r})")
+                    f"{settings.AIRTABLE_BASE_ID}, and the AIRTABLE_EMPLOYER_TABLE / AIRTABLE_TALENT_TABLE settings)")
+        elif e.code == 422 and "UNKNOWN_FIELD_NAME" in str(err):
+            hint = " (a column name in Airtable doesn't match the form label the website uses; see core/airtable.py)"
         raise AirtableError(f"HTTP {e.code} {err}{hint}"[:500]) from e
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         raise AirtableError(f"Could not reach Airtable: {getattr(e, 'reason', e)}"[:500]) from e
 
 
-def _table_url():
-    return f"{API}/{settings.AIRTABLE_BASE_ID}/{urllib.parse.quote(settings.AIRTABLE_TABLE, safe='')}"
+def _table_url(obj):
+    return f"{API}/{settings.AIRTABLE_BASE_ID}/{urllib.parse.quote(table_for(obj), safe='')}"
 
 
 def push(obj):
@@ -150,7 +166,7 @@ def push(obj):
     try:
         # "typecast" lets Airtable add a dropdown option it doesn't have yet (needed for
         # "Position Recruiting For", which has no options in Airtable).
-        created = _request("POST", _table_url(), {"records": [{"fields": fields_for(obj)}], "typecast": True})
+        created = _request("POST", _table_url(obj), {"records": [{"fields": fields_for(obj)}], "typecast": True})
         record_id = created["records"][0]["id"]
     except (AirtableError, KeyError, IndexError, ValueError) as e:
         logger.warning("Airtable send failed for %s #%s: %s", model.__name__, obj.pk, e)
