@@ -195,13 +195,13 @@ AIRTABLE_TABLE = os.environ.get("AIRTABLE_TABLE", "tblZaBP5px3dqWuaD").strip()
 AIRTABLE_TIMEOUT = int(os.environ.get("AIRTABLE_TIMEOUT", "8"))
 
 # ---------------------------------------------------------------------------
-# Jobs from the client's Manatal careers page (careers-page.com), shown on the Candidates page.
-# The account is the name in the careers page address: https://www.careers-page.com/<account>
-# Set it to empty in .env to switch it off (then only jobs added in the admin show).
+# Jobs from the client's Manatal careers page, shown on the Candidates page (core/careers_feed.py).
+# Must be a https://<name>.careers-page.com address. Set it to empty in .env to switch it off
+# (then only jobs added in the admin show).
 # ---------------------------------------------------------------------------
-MANATAL_CAREERS_ACCOUNT = os.environ.get("MANATAL_CAREERS_ACCOUNT", "sd-recruitment").strip()
+MANATAL_CAREERS_PAGE_URL = os.environ.get("MANATAL_CAREERS_PAGE_URL", "https://sd-recruitment.careers-page.com").strip()
 if len(sys.argv) > 1 and sys.argv[1] == "test":
-    MANATAL_CAREERS_ACCOUNT = ""  # tests never call careers-page.com (core/tests/test_careers_feed.py fakes it)
+    MANATAL_CAREERS_PAGE_URL = ""  # tests never call careers-page.com (core/tests/test_careers_feed.py fakes it)
 MANATAL_CACHE_MINUTES = int(os.environ.get("MANATAL_CACHE_MINUTES", "15"))
 MANATAL_TIMEOUT = int(os.environ.get("MANATAL_TIMEOUT", "6"))
 
