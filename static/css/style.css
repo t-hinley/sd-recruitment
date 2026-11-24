@@ -266,6 +266,21 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
 .choice--sm { padding: 10px 12px; font-size: .9rem; }
 .choice--sm .choice__box { width: 20px; height: 20px; }
 .field--error .choice { border-color: #D92D20; }
+/* Multi-choice options as "add" chips, like the Airtable form: + to add, tick once selected. */
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 16px 7px 8px; border: 1.5px solid #CDD5E5; border-radius: 999px; background: #fff; color: var(--blue-ink); font-weight: 600; font-size: .92rem; line-height: 1.2; cursor: pointer; user-select: none; transition: border-color .15s, background-color .15s, color .15s; }
+.chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chip__icon { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 50%; background: var(--blue-soft); color: var(--blue); transition: background-color .15s, color .15s; }
+.chip__icon .icon { width: 14px; height: 14px; }
+.chip__tick { display: none; }
+.chip:hover { border-color: var(--blue); }
+.chip:hover .chip__icon { background: var(--blue); color: #fff; }
+.chip:has(input:checked) { border-color: var(--blue); background: var(--blue); color: #fff; }
+.chip input:checked + .chip__icon { background: #fff; color: var(--blue); }
+.chip input:checked + .chip__icon .chip__plus { display: none; }
+.chip input:checked + .chip__icon .chip__tick { display: block; }
+.chip:has(input:focus-visible) { outline: 3px solid var(--orange); outline-offset: 2px; }
+.field--error .chip { border-color: #D92D20; }
 .choice { position: relative; display: flex; align-items: center; gap: 12px; padding: 13px 14px; border: 1.5px solid #CDD5E5; border-radius: 10px; cursor: pointer; background: #fff; color: var(--blue-ink); font-weight: 600; font-size: .95rem; line-height: 1.35; transition: border-color .15s, background-color .15s; }
 .choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .choice__box { display: grid; place-items: center; width: 22px; height: 22px; flex: none; border: 2px solid #AEB8CF; border-radius: 6px; background: #fff; color: #fff; transition: background-color .15s, border-color .15s; }
@@ -278,6 +293,21 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
 .choice--radio .choice__box { border-radius: 50%; }
 .choice--radio input:checked + .choice__box { background: #fff; box-shadow: inset 0 0 0 4px #fff, inset 0 0 0 12px var(--blue); }
 .support.field--error .choice { border-color: #D92D20; }
+/* Multi-choice options as "add" chips, like the Airtable form: + to add, tick once selected. */
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 16px 7px 8px; border: 1.5px solid #CDD5E5; border-radius: 999px; background: #fff; color: var(--blue-ink); font-weight: 600; font-size: .92rem; line-height: 1.2; cursor: pointer; user-select: none; transition: border-color .15s, background-color .15s, color .15s; }
+.chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chip__icon { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 50%; background: var(--blue-soft); color: var(--blue); transition: background-color .15s, color .15s; }
+.chip__icon .icon { width: 14px; height: 14px; }
+.chip__tick { display: none; }
+.chip:hover { border-color: var(--blue); }
+.chip:hover .chip__icon { background: var(--blue); color: #fff; }
+.chip:has(input:checked) { border-color: var(--blue); background: var(--blue); color: #fff; }
+.chip input:checked + .chip__icon { background: #fff; color: var(--blue); }
+.chip input:checked + .chip__icon .chip__plus { display: none; }
+.chip input:checked + .chip__icon .chip__tick { display: block; }
+.chip:has(input:focus-visible) { outline: 3px solid var(--orange); outline-offset: 2px; }
+.field--error .chip { border-color: #D92D20; }
 .choice--consent { align-items: flex-start; font-weight: 500; font-size: .92rem; color: var(--text); padding: 14px 16px; background: var(--grey); border-color: transparent; }
 .choice--consent .choice__box { margin-top: 1px; }
 .consent { margin-bottom: 22px; }

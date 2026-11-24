@@ -138,12 +138,12 @@
 
         <fieldset class="support{% if form.support.errors %} field--error{% endif %}" id="support-options">
           <legend>What can we help with? <span class="req" aria-hidden="true">*</span></legend>
-          <div class="choice-grid">
+          <div class="chips">
             {% for opt in form.support %}
-            <label class="choice" for="{{ opt.id_for_label }}">
+            <label class="chip" for="{{ opt.id_for_label }}">
               {{ opt.tag }}
-              <span class="choice__box" aria-hidden="true"><svg class="icon"><use href="#i-check"/></svg></span>
-              <span class="choice__label">{{ opt.choice_label }}</span>
+              <span class="chip__icon" aria-hidden="true"><svg class="icon chip__plus"><use href="#i-plus"/></svg><svg class="icon chip__tick"><use href="#i-check"/></svg></span>
+              <span>{{ opt.choice_label }}</span>
             </label>
             {% endfor %}
           </div>
