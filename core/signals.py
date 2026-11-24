@@ -4,13 +4,12 @@ from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
 from . import security
-from .models import CandidateRegistration, ServiceRequest
+from .models import CandidateRegistration
 
 
 @receiver(post_delete, sender=CandidateRegistration)
-@receiver(post_delete, sender=ServiceRequest)
 def delete_resume_file(sender, instance, **kwargs):
-    """Deleting a candidate or service request (one at a time or in bulk) also removes the stored resume."""
+    """Deleting a candidate (one at a time or in bulk) also removes their stored CV file."""
     if instance.resume:
         instance.resume.storage.delete(instance.resume.name)
 

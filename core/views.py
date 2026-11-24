@@ -10,8 +10,8 @@ from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
 
 from . import airtable, content
-from .forms import CandidateForm, ContactForm, ServiceRequestForm, VacancyForm
-from .models import CandidateRegistration, Job, ServiceRequest
+from .forms import CandidateForm, ContactForm, VacancyForm
+from .models import RESUME_PACKAGES, CandidateRegistration, Job
 from .notifications import send_enquiry_notification
 
 SERVICE_KEYS = {key for key, _label in CandidateRegistration.SUPPORT_CHOICES}
@@ -75,6 +75,9 @@ def candidates(request):
     initial = {}
     if service in SERVICE_KEYS:
         initial["support"] = [service]
+    package = request.GET.get("package")
+    if package in {k for k, _ in RESUME_PACKAGES}:
+        initial.update(support=["resume"], resume_package=package)
     if selected_job:
         initial.update(job=selected_job, support=["jobs"], position_sought=selected_job.title,
                        industry=selected_job.industry)
@@ -97,6 +100,7 @@ def candidates(request):
         "jobs": jobs,
         "selected_job": selected_job,
         "selected_service": service if service in SERVICE_KEYS else "",
+        "price_note": content.PRICE_NOTE,
         "benefits": content.CANDIDATE_BENEFITS,
         "services": content.CAREER_SERVICES,
         "process": content.CANDIDATE_PROCESS,
@@ -116,27 +120,9 @@ def contact(request):
 
 
 def career_services(request):
-    """Resume writing, interview preparation and career counselling, with prices and one request form.
-    ?service=resume|interview|career (and &package=... for resumes) pre-selects the form."""
-    services = {k for k, _ in ServiceRequest.SERVICES}
-    packages = {k for k, _ in ServiceRequest.PACKAGES}
-    initial = {}
-    if request.GET.get("service") in services:
-        initial["service"] = request.GET["service"]
-    if request.GET.get("package") in packages:
-        initial.update(service="resume", package=request.GET["package"])
-    form = ServiceRequestForm(initial=initial or None)
-    if request.method == "POST":
-        form = ServiceRequestForm(request.POST, request.FILES)
-        if form.is_valid():
-            obj = form.save()
-            send_enquiry_notification(obj, request)
-            messages.success(request, "Thank you – your request has been received. We'll contact you to "
-                                      "confirm the details and arrange a time.")
-            return redirect(reverse("core:career_services") + "?sent=1#request")
+    """Resume writing, interview preparation and career counselling with prices. Every button opens the
+    candidate registration form (Candidates page) with that service, and package, already chosen."""
     return render(request, "core/career_services.html", {
-        "form": form,
-        "sent": request.GET.get("sent"),
         "packages": content.RESUME_PACKAGES,
         "interview": content.INTERVIEW_SERVICE,
         "counselling": content.COUNSELLING_SERVICE,
@@ -148,19 +134,12 @@ def privacy(request):
     return render(request, "core/privacy.html")
 
 
-RESUME_SOURCES = {
-    "candidate": (CandidateRegistration, "core.view_candidateregistration", "CV"),
-    "service": (ServiceRequest, "core.view_servicerequest", "Resume"),
-}
-
-
-def resume_download(request, pk, kind="candidate"):
-    """Staff-only: open an uploaded CV / resume. Wrapped in admin_view() in core/admin_site.py, so only
-    signed-in staff with permission to view those records can reach it."""
-    model, perm, label = RESUME_SOURCES.get(kind, RESUME_SOURCES["candidate"])
-    if not request.user.has_perm(perm):
+def resume_download(request, pk):
+    """Staff-only: open a candidate's CV. Wrapped in admin_view() in core/admin_site.py, so only
+    signed-in staff with permission to view candidates can reach it."""
+    if not request.user.has_perm("core.view_candidateregistration"):
         raise Http404
-    obj = get_object_or_404(model, pk=pk)
+    obj = get_object_or_404(CandidateRegistration, pk=pk)
     if not obj.resume:
         raise Http404
     try:
@@ -169,7 +148,7 @@ def resume_download(request, pk, kind="candidate"):
         raise Http404
     ext = Path(obj.resume.name).suffix.lower()
     safe_name = "".join(c for c in obj.full_name if c.isalnum() or c in " -_").strip().replace(" ", "-") or "candidate"
-    response = FileResponse(handle, as_attachment=True, filename=f"{label}-{safe_name}{ext}",
+    response = FileResponse(handle, as_attachment=True, filename=f"CV-{safe_name}{ext}",
                             content_type=mimetypes.guess_type(f"x{ext}")[0] or "application/octet-stream")
     response["X-Content-Type-Options"] = "nosniff"
     response["Cache-Control"] = "private, no-store"

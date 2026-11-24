@@ -95,7 +95,7 @@
           rm.setAttribute("aria-label", "Remove " + labelOf(input));
           rm.addEventListener("click", function () {
             input.checked = false;
-            render();
+            input.dispatchEvent(new Event("change", { bubbles: true }));
             add.focus();
           });
           values.appendChild(pill);
@@ -110,7 +110,7 @@
           opt.lastChild.textContent = labelOf(input);
           opt.addEventListener("click", function () {
             input.checked = true;
-            render();
+            input.dispatchEvent(new Event("change", { bubbles: true }));
             if (menu.querySelector(".ms__option")) { menu.hidden = false; menu.querySelector(".ms__option").focus(); }
             else close(true);
           });
@@ -151,41 +151,22 @@
     render();
   });
 
-  // Career Services: show only the fields that apply, and let the package / service buttons fill in
-  // the form. Without JavaScript all fields show and the buttons still work (?service=...&package=...).
-  var serviceForm = document.querySelector("[data-service-form]");
-  if (serviceForm) {
-    var radios = serviceForm.querySelectorAll('input[name="service-service"]');
-    var pkg = serviceForm.querySelector('select[name="service-package"]');
-    var sync = function () {
-      var chosen = serviceForm.querySelector('input[name="service-service"]:checked');
-      var service = chosen ? chosen.value : "";
-      serviceForm.querySelectorAll("[data-show-for]").forEach(function (el) {
-        var wanted = el.getAttribute("data-show-for").split(" ");
-        var show = wanted.indexOf(service) !== -1 ||
-          (wanted.indexOf("criteria") !== -1 && service === "resume" && pkg && pkg.value === "criteria");
+  // Candidate form: show the resume package, number of criteria and preferred times only when the
+  // matching service is chosen. Without JavaScript all of them show.
+  if (support) {
+    var pkgSelect = support.querySelector('select[name="candidate-resume_package"]');
+    var syncExtras = function () {
+      var chosen = Array.prototype.map.call(support.querySelectorAll('input[name="candidate-support"]:checked'),
+        function (i) { return i.value; });
+      support.querySelectorAll("[data-support-for]").forEach(function (el) {
+        var wanted = el.getAttribute("data-support-for").split(" ");
+        var show = wanted.some(function (w) { return chosen.indexOf(w) !== -1; }) ||
+          (wanted.indexOf("criteria") !== -1 && chosen.indexOf("resume") !== -1 && pkgSelect && pkgSelect.value === "criteria");
         el.hidden = !show;
       });
     };
-    radios.forEach(function (r) { r.addEventListener("change", sync); });
-    if (pkg) pkg.addEventListener("change", sync);
-    sync();
-
-    document.querySelectorAll("a[data-request]").forEach(function (link) {
-      link.addEventListener("click", function (e) {
-        var service = link.getAttribute("data-service"), p = link.getAttribute("data-package");
-        var radio = serviceForm.querySelector('input[name="service-service"][value="' + service + '"]');
-        if (!radio) return;
-        e.preventDefault();
-        radio.checked = true;
-        if (pkg && p) pkg.value = p;
-        sync();
-        var target = document.getElementById("request");
-        target.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-        history.replaceState(null, "", "?service=" + service + (p ? "&package=" + p : "") + "#request");
-        setTimeout(function () { (p || service !== "resume" ? serviceForm.querySelector("#id_service-full_name") : pkg).focus({ preventScroll: true }); }, 450);
-      });
-    });
+    support.addEventListener("change", syncExtras);
+    syncExtras();
   }
 
   // Resume upload: show the chosen file name, and allow dropping a file.

@@ -231,6 +231,10 @@ p { margin: 0 0 1em; }
 .price-table__price { text-align: right !important; font-weight: 800; color: var(--blue-ink); }
 .price-table__price.is-free { color: #11835B; }
 .choice-grid.choice-grid--stack { grid-template-columns: 1fr; }
+.service-extras { margin-top: 16px; }
+.service-extras:not(:has(> :not([hidden]))) { display: none; }
+.service-extras__note { margin-top: 10px; }
+.next-step--plain { margin-top: 0; background: #fff; }
 
 /* ---------- Page hero (inner pages) ---------- */
 .page-hero { background: var(--grey); padding: 64px 0 60px; position: relative; overflow: hidden; }

@@ -5,7 +5,7 @@ from django import forms
 from django.conf import settings
 
 from .models import (CANDIDATE_INDUSTRIES, EMPLOYER_INDUSTRIES, EMPLOYMENT_TYPES, EXPERIENCE_LEVELS,
-                     VACANCY_COUNTS, VISA_TYPES, CandidateRegistration, ContactEnquiry, Job, ServiceRequest,
+                     RESUME_PACKAGES, VACANCY_COUNTS, VISA_TYPES, CandidateRegistration, ContactEnquiry, Job,
                      VacancyEnquiry)
 
 PHONE_RE = re.compile(r"^[0-9 +()\-]{8,20}$")
@@ -130,7 +130,8 @@ class CandidateForm(HoneypotMixin, forms.ModelForm):
         model = CandidateRegistration
         fields = [
             "full_name", "phone", "email", "location", "visa_type", "preferred_location", "industry",
-            "position_sought", "employment_types", "experience", "resume", "job", "consent",
+            "position_sought", "employment_types", "experience", "resume_package", "criteria_count",
+            "preferred_times", "resume", "job", "consent",
         ]
         labels = {
             "full_name": "Full name",
@@ -149,6 +150,8 @@ class CandidateForm(HoneypotMixin, forms.ModelForm):
             "location": forms.TextInput(attrs={"placeholder": "e.g. Perth WA, or Manila, Philippines"}),
             "preferred_location": forms.TextInput(attrs={"placeholder": "e.g. Perth metro, regional WA, anywhere"}),
             "position_sought": forms.Textarea(attrs={"rows": 2}),
+            "criteria_count": forms.NumberInput(attrs={"min": 1, "max": 50, "inputmode": "numeric"}),
+            "preferred_times": forms.TextInput(attrs={"placeholder": "e.g. Weekday evenings, or Saturday morning"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -156,6 +159,10 @@ class CandidateForm(HoneypotMixin, forms.ModelForm):
         self.fields["visa_type"].choices = _choices("Select your visa type", VISA_TYPES)
         self.fields["industry"].choices = _choices("Select an industry", CANDIDATE_INDUSTRIES)
         self.fields["experience"].choices = _choices("Select", EXPERIENCE_LEVELS)
+        self.fields["resume_package"].choices = _choices("Select a package", RESUME_PACKAGES)
+        self.fields["criteria_count"].min_value = 1
+        self.fields["criteria_count"].max_value = 50
+        self.fields["preferred_times"].help_text = "For interview or career counselling sessions. We'll confirm a time with you."
         self.fields["job"].queryset = Job.objects.filter(is_published=True)
         exts = ", ".join(f".{e}" for e in settings.RESUME_EXTENSIONS)
         self.fields["resume"].widget.attrs["accept"] = exts
@@ -166,6 +173,22 @@ class CandidateForm(HoneypotMixin, forms.ModelForm):
 
     def clean_resume(self):
         return clean_resume_file(self.cleaned_data.get("resume"))
+
+    def clean(self):
+        d = super().clean()
+        chosen = set(d.get("support") or [])
+        if "resume" in chosen:
+            if not d.get("resume_package"):
+                self.add_error("resume_package", "Please choose a resume package.")
+            elif d.get("resume_package") == "criteria" and not d.get("criteria_count"):
+                self.add_error("criteria_count", "Please tell us how many selection criteria you need.")
+        else:
+            d["resume_package"] = ""
+        if d.get("resume_package") != "criteria":
+            d["criteria_count"] = None
+        if not chosen & {"interview", "career"}:
+            d["preferred_times"] = ""
+        return d
 
     def save(self, commit=True):
         obj = super().save(commit=False)
@@ -194,74 +217,3 @@ class ContactForm(HoneypotMixin, forms.ModelForm):
             "message": forms.Textarea(attrs={"rows": 5, "placeholder": "How can we help?"}),
         }
 
-
-class ServiceRequestForm(HoneypotMixin, forms.ModelForm):
-    """Request form on the Career Services page. The package is needed for resume writing, and the number
-    of criteria for Selection Criteria Writing."""
-
-    prefix = "service"
-
-    consent = forms.BooleanField(
-        required=True,
-        label="I agree to SD Recruitment storing my details and contacting me about this request, "
-              "as described in the Privacy Policy.",
-        error_messages={"required": "Please tick this box so we can contact you."},
-    )
-
-    class Meta:
-        model = ServiceRequest
-        fields = ["service", "package", "criteria_count", "full_name", "email", "phone", "role",
-                  "preferred_times", "resume", "details", "consent"]
-        labels = {"full_name": "Full name"}
-        widgets = {
-            "service": forms.RadioSelect,
-            "criteria_count": forms.NumberInput(attrs={"min": 1, "max": 50, "inputmode": "numeric"}),
-            "full_name": forms.TextInput(attrs={"autocomplete": "name"}),
-            "email": forms.EmailInput(attrs={"autocomplete": "email", "placeholder": "you@email.com"}),
-            "phone": forms.TextInput(attrs={"autocomplete": "tel", "inputmode": "tel", "placeholder": "04xx xxx xxx"}),
-            "role": forms.TextInput(attrs={"placeholder": "e.g. Registered Nurse, Store Manager"}),
-            "preferred_times": forms.TextInput(attrs={"placeholder": "e.g. Weekday evenings, or Saturday morning"}),
-            "details": forms.Textarea(attrs={"rows": 3, "placeholder": "e.g. the job you're applying for, or your deadline"}),
-        }
-        help_texts = {
-            "preferred_times": "We'll contact you to confirm a time.",
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["service"].choices = ServiceRequest.SERVICES
-        self.fields["package"].choices = _choices("Select a package", ServiceRequest.PACKAGES)
-        self.fields["criteria_count"].min_value = 1
-        self.fields["criteria_count"].max_value = 50
-        exts = ", ".join(f".{e}" for e in settings.RESUME_EXTENSIONS)
-        self.fields["resume"].widget.attrs["accept"] = exts
-        self.fields["resume"].help_text = (f"Optional. If you have one, PDF or Word document up to "
-                                           f"{settings.RESUME_MAX_MB} MB.")
-
-    def clean_resume(self):
-        return clean_resume_file(self.cleaned_data.get("resume"))
-
-    def clean(self):
-        d = super().clean()
-        service = d.get("service")
-        if service == "resume":
-            if not d.get("package"):
-                self.add_error("package", "Please choose a resume package.")
-            elif d.get("package") == "criteria" and not d.get("criteria_count"):
-                self.add_error("criteria_count", "Please tell us how many selection criteria you need.")
-        else:
-            d["package"] = ""
-        if d.get("package") != "criteria":
-            d["criteria_count"] = None
-        if service == "resume":
-            d["preferred_times"] = ""
-        return d
-
-    def save(self, commit=True):
-        obj = super().save(commit=False)
-        f = self.cleaned_data.get("resume")
-        if f and hasattr(f, "name"):
-            obj.resume_name = Path(f.name).name[:200]
-        if commit:
-            obj.save()
-        return obj

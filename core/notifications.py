@@ -5,7 +5,7 @@ from django.core.mail import EmailMessage
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import CandidateRegistration, ContactEnquiry, ServiceRequest, VacancyEnquiry
+from .models import CandidateRegistration, ContactEnquiry, VacancyEnquiry
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +16,6 @@ FIELDS = {
                                                           "preferred_location", "industry", "position_sought",
                                                           "employment_types", "experience", "job"]),
     ContactEnquiry: ("New contact enquiry", ["name", "email", "phone", "enquirer_type", "message"]),
-    ServiceRequest: ("New career service request", ["service", "package", "criteria_count", "full_name", "email",
-                                                    "phone", "role", "preferred_times", "details"]),
 }
 
 
@@ -36,8 +34,6 @@ def _subject(obj):
         return f"New vacancy: {obj.position} – {obj.company}"
     if isinstance(obj, CandidateRegistration):
         return f"New candidate: {obj.full_name} – {obj.industry}"
-    if isinstance(obj, ServiceRequest):
-        return f"New service request: {obj.short_service} – {obj.full_name}"
     return f"New website enquiry from {obj.name}"
 
 
@@ -50,10 +46,12 @@ def send_enquiry_notification(obj, request=None):
     for field in fields:
         label = str(obj._meta.get_field(field).verbose_name)
         lines.append(f"{label[:1].upper() + label[1:]}: {_value(obj, field)}")
-    if isinstance(obj, ServiceRequest):
-        lines.append(f"Current resume: {'attached in the admin' if obj.resume else 'not provided'}")
     if isinstance(obj, CandidateRegistration):
         lines.append(f"Support requested: {', '.join(obj.support_list) or '-'}")
+        if obj.package_summary:
+            lines.append(f"Resume package: {obj.package_summary}")
+        if obj.preferred_times:
+            lines.append(f"Preferred days and times: {obj.preferred_times}")
         lines.append(f"Resume / CV: {'attached in the admin' if obj.resume else 'not provided'}")
         lines.append("Consent to be contacted: yes")
     lines += ["", f"Received: {timezone.localtime(obj.created_at):%d %b %Y %I:%M %p}"]

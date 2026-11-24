@@ -149,6 +149,12 @@
             {% endfor %}
           </div>
           {% for error in form.support.errors %}<p class="field__error">{{ error }}</p>{% endfor %}
+          <div class="field-grid service-extras">
+            <div class="field--wide" data-support-for="resume">{% include "includes/field.html" with field=form.resume_package required=True %}</div>
+            <div class="field--wide" data-support-for="criteria">{% include "includes/field.html" with field=form.criteria_count required=True %}</div>
+            <div class="field--wide" data-support-for="interview career">{% include "includes/field.html" with field=form.preferred_times %}</div>
+          </div>
+          <p class="field__help service-extras__note" data-support-for="resume interview career">Service prices are on our <a href="{% url 'core:career_services' %}" target="_blank">Career Services</a> page. {{ price_note }} We'll confirm everything with you before any work starts.</p>
         </fieldset>
 
         <fieldset>
