@@ -1,11 +1,15 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Contact Us | SD Recruitment{% endblock %}
 {% block meta_description %}Get in touch with SD Recruitment about hiring, career opportunities or career support.{% endblock %}
 {% block og_title %}Contact SD Recruitment{% endblock %}
 
 {% block content %}
-<section class="page-hero page-hero--short">
+<section class="page-hero page-hero--short page-hero--photo">
+  <div class="page-hero__photo" aria-hidden="true">
+    <img src="{% static 'images/card-employers.jpg' %}" alt="" width="529" height="367" fetchpriority="high">
+  </div>
   <div class="container page-hero__inner">
     <p class="eyebrow">Contact us</p>
     <h1>We'd love to hear from you.</h1>
