@@ -63,7 +63,7 @@
           {% include "includes/field.html" with field=form.message wide=True %}
         </div>
         <button class="btn btn--blue btn--lg btn--block" type="submit">Send message <svg class="icon"><use href="#i-arrow"/></svg></button>
-        <p class="form-note"><svg class="icon"><use href="#i-lock"/></svg> We only use your details to reply. See our <a href="{% url 'core:privacy' %}">Privacy Policy</a>.</p>
+        <p class="form-note"><svg class="icon"><use href="#i-lock"/></svg> <span>We only use your details to reply. See our <a href="{% url 'core:privacy' %}">Privacy Policy</a>.</span></p>
       </form>
       {% endif %}
     </div>

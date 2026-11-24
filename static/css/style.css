@@ -294,6 +294,7 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field--wide { grid-column: 1 / -1; }
 .field-grid + .field { margin-top: 16px; }
+.field-grid + .btn { margin-top: 28px; }
 .field label, .field__label { font-weight: 600; font-size: .93rem; color: var(--blue-ink); }
 .req { color: var(--orange-strong); }
 .opt { color: var(--muted); font-weight: 400; font-size: .86rem; }
@@ -308,7 +309,7 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
 .field--error input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .field--error select, .field--error textarea { border-color: #D92D20; }
 .form-alert { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; margin-bottom: 22px; border-radius: 10px; background: #FEF3F2; color: #912018; border: 1px solid #FECDCA; }
 .form-alert .icon { width: 22px; height: 22px; margin-top: 1px; }
-.form-note { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; font-size: .86rem; color: var(--muted); }
+.form-note { display: flex; align-items: flex-start; gap: 8px; margin: 16px 0 0; font-size: .86rem; color: var(--muted); }
 .form-note .icon { width: 16px; height: 16px; margin-top: 3px; }
 
 /* Checkbox / radio cards */
