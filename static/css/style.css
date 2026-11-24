@@ -262,7 +262,7 @@ p { margin: 0 0 1em; }
 .prose h2:first-child { margin-top: 0; }
 .prose ul { padding-left: 1.2em; }
 .prose li { margin-bottom: .4em; }
-.prose--narrow { max-width: 760px; margin-left: auto; margin-right: auto; }
+.prose--narrow { max-width: 760px; }
 .brand-card { background: var(--grey); border-radius: var(--radius-lg); padding: 44px 36px 30px; text-align: center; }
 .brand-card img { width: 70%; margin: 0 auto 18px; }
 .brand-card__tag { margin: 0; color: var(--orange-strong); font-weight: 700; font-style: italic; }
