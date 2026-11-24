@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
 
-from . import airtable, content
+from . import airtable, careers_feed, content
 from .forms import CandidateForm, ContactForm, VacancyForm
 from .models import RESUME_PACKAGES, CandidateRegistration, Job
 from .notifications import send_enquiry_notification
@@ -98,6 +98,8 @@ def candidates(request):
         "form": form,
         "sent": request.GET.get("sent"),
         "jobs": jobs,
+        "external_jobs": careers_feed.jobs(),
+        "careers_page_url": careers_feed.careers_page_url(),
         "selected_job": selected_job,
         "selected_service": service if service in SERVICE_KEYS else "",
         "price_note": content.PRICE_NOTE,

@@ -69,6 +69,7 @@ The admin has the same design as the other SD admins. It includes:
   update the status, *Assigned to* and internal notes. Candidate records have a **Download CV**
   button.
 - **Career services on candidate records:** the resume package, number of selection criteria and preferred days/times appear on the candidate record, in emails and in reports. No online payment: the team contacts the person to confirm and invoice. These extra details are not sent to Airtable (it has no columns for them).
+- **Jobs from Manatal (careers-page.com):** jobs the client posts on their Manatal careers page show automatically under "Roles we're recruiting for" on the Candidates page (pinned jobs first). Each has a **View & Apply** button that opens the job on careers-page.com in a new tab. The list refreshes every 15 minutes (`MANATAL_CACHE_MINUTES`); if careers-page.com is unreachable, the last list is shown. Set the account with `MANATAL_CAREERS_ACCOUNT` (default `sd-recruitment`). Code: `core/careers_feed.py`.
 - **Current opportunities:** add, edit or hide the jobs shown on the Candidates page. Each job gets
   an *Apply* button that opens the form linked to that job.
 - **Airtable status** on each vacancy and candidate (Sent, Failed or Not set up), with a *send again* action.

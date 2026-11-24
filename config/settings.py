@@ -194,6 +194,15 @@ AIRTABLE_TABLE = os.environ.get("AIRTABLE_TABLE", "tblZaBP5px3dqWuaD").strip()
 AIRTABLE_TIMEOUT = int(os.environ.get("AIRTABLE_TIMEOUT", "8"))
 
 # ---------------------------------------------------------------------------
+# Jobs from the client's Manatal careers page (careers-page.com), shown on the Candidates page.
+# The account is the name in the careers page address: https://www.careers-page.com/<account>
+# Set it to empty in .env to switch it off (then only jobs added in the admin show).
+# ---------------------------------------------------------------------------
+MANATAL_CAREERS_ACCOUNT = os.environ.get("MANATAL_CAREERS_ACCOUNT", "sd-recruitment").strip()
+MANATAL_CACHE_MINUTES = int(os.environ.get("MANATAL_CACHE_MINUTES", "15"))
+MANATAL_TIMEOUT = int(os.environ.get("MANATAL_TIMEOUT", "6"))
+
+# ---------------------------------------------------------------------------
 # Production security
 # ---------------------------------------------------------------------------
 if not DEBUG:
