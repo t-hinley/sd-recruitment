@@ -61,7 +61,7 @@ def candidate_data(**extra):
 class SiteTests(TestCase):
     def test_pages_render_with_recommended_wording(self):
         for name, text in [
-            ("core:home", "Connecting Talent with"),
+            ("core:home", "Connecting Business."),
             ("core:about", "Our recruitment approach"),
             ("core:employers", "Find the Right People for Your Business."),
             ("core:candidates", "Your Next Opportunity Starts Here."),
@@ -77,12 +77,14 @@ class SiteTests(TestCase):
                     self.assertContains(r, f">{label}</a>")
                 self.assertNotContains(r, "Jobseeker")  # 'Candidates', not 'Jobseekers'
 
-    def test_home_has_both_pathways(self):
+    def test_home_hero(self):
         r = self.client.get(reverse("core:home"))
-        self.assertContains(r, "For Employers")
-        self.assertContains(r, "Looking for the right people?")
-        self.assertContains(r, "For Candidates")
-        self.assertContains(r, "Looking for your next opportunity?")
+        self.assertContains(r, 'Connecting Business. <span class="text-orange">Empowering Careers.</span>')
+        self.assertContains(r, "images/hero.jpg")
+        self.assertNotContains(r, "Looking for the right people?")  # pathway buttons removed from the hero
+        # The Employers and Candidates cards further down still lead to both pages.
+        self.assertContains(r, 'class="audience audience--employers"')
+        self.assertContains(r, 'class="audience audience--candidates"')
 
     def test_employers_page_sections(self):
         r = self.client.get(reverse("core:employers"))
