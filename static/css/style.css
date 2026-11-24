@@ -138,13 +138,19 @@ p { margin: 0 0 1em; }
 
 /* Audience cards (home) */
 .audience-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.audience { position: relative; overflow: hidden; border-radius: var(--radius-lg); padding: 44px 40px; color: #fff; min-height: 260px; display: flex; flex-direction: column; align-items: flex-start; }
-.audience h2 { color: #fff; font-size: clamp(1.7rem, 3vw, 2.3rem); margin-bottom: 10px; }
-.audience p { max-width: 26em; font-size: 1.05rem; opacity: .95; margin-bottom: 26px; }
-.audience .btn { margin-top: auto; }
-.audience::after { content: ""; position: absolute; right: -60px; bottom: -70px; width: 240px; height: 240px; border-radius: 40px; transform: rotate(30deg); border: 28px solid rgba(255,255,255,.08); }
-.audience--employers { background: linear-gradient(135deg, var(--orange-strong), #A93810); }
-.audience--candidates { background: linear-gradient(135deg, var(--blue), var(--blue-ink)); }
+.audience { position: relative; overflow: hidden; isolation: isolate; border-radius: var(--radius-lg); min-height: 300px; display: flex; color: #fff; background: var(--audience-bg); }
+/* Photo from the homepage mockup on the right; a dark shade from the left keeps the white text readable. */
+.audience__photo { position: absolute; top: 0; right: 0; height: 100%; width: 60%; object-fit: cover; object-position: center 30%; z-index: -2; -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 30%); mask-image: linear-gradient(90deg, transparent 0%, #000 30%); }
+.audience::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(16,22,38,.85) 0%, rgba(16,22,38,.62) 38%, rgba(16,22,38,.1) 66%, rgba(16,22,38,0) 100%); }
+.audience--employers { --audience-bg: #8f8e8b; }
+.audience--candidates { --audience-bg: #6e6f6b; }
+.audience--candidates .audience__photo { object-position: center top; }
+.audience__body { display: flex; flex-direction: column; align-items: flex-start; padding: 44px 40px; max-width: 62%; }
+.audience h2 { color: #fff; font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 10px; }
+.audience p { font-size: 1.08rem; opacity: .95; margin-bottom: 26px; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.audience .btn { margin-top: auto; white-space: nowrap; }
+.btn--ring { border-color: rgba(255,255,255,.85); box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+.btn--ring:hover { border-color: #fff; }
 
 /* Industries */
 .industry { display: flex; flex-direction: column; background: #fff; border-radius: var(--radius); padding: 26px 24px; box-shadow: var(--shadow); text-decoration: none; color: var(--text); border: 2px solid transparent; transition: border-color .15s, transform .15s; }
@@ -387,7 +393,11 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
   .section { padding: 56px 0; }
   .section-head { margin-bottom: 32px; text-align: left; }
   .card-grid--3, .card-grid--4, .card-grid--5, .industry-list, .steps--4, .steps--5, .audience-grid { grid-template-columns: 1fr; }
-  .audience { padding: 32px 24px; min-height: 0; }
+  .audience { min-height: 260px; }
+  .audience__body { padding: 30px 22px; max-width: none; }
+  .audience p { max-width: 62%; }
+  .audience__photo { width: 62%; }
+  .audience::before { background: linear-gradient(90deg, rgba(16,22,38,.88) 0%, rgba(16,22,38,.72) 50%, rgba(16,22,38,.2) 80%, rgba(16,22,38,0) 100%); }
   .page-hero { padding: 40px 0 40px; }
   .page-hero__lead { font-size: 1.06rem; }
   .page-hero__actions .btn { flex: 1 1 100%; }
