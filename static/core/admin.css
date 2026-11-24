@@ -179,3 +179,7 @@ div.breadcrumbs { padding: 12px 40px; }
   .sdhbars a{grid-template-columns:1fr 40px;row-gap:6px}
   .sdhbars .ht{grid-column:1 / -1;grid-row:2}
 }
+
+/* Django's admin stylesheet puts a square bullet on every "ul > li"; the dashboard lists draw
+   their own rows, so remove the bullet on the items themselves (some browsers, e.g. Safari, show it). */
+.sdbars>li,.sdhbars>li,.sdlist>li,.sdacts>li{list-style:none;padding-left:0}
