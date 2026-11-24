@@ -96,7 +96,7 @@ class SiteTests(TestCase):
     def test_candidates_page_sections(self):
         r = self.client.get(reverse("core:candidates"))
         for text in ("Access to opportunities", "Resume Support", "Interview Preparation", "Career Counselling",
-                     "Get resume support", "Prepare for an interview", "Explore career support",
+                     "Create My Resume", "Book A Session", "Book 15-min free Session",
                      "does not guarantee an interview", "No roles are advertised right now"):
             self.assertContains(r, text)
 

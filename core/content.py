@@ -113,14 +113,14 @@ CANDIDATE_BENEFITS = [
 CAREER_SERVICES = [
     ("resume", "file", "Resume Support",
      "Get help creating or improving your resume so your skills, experience and achievements are clearly presented.",
-     "Get resume support"),
+     "Create My Resume"),
     ("interview", "mic", "Interview Preparation",
      "Build confidence and prepare for interviews with practical guidance on common questions and how to "
      "present your experience.",
-     "Prepare for an interview"),
+     "Book A Session"),
     ("career", "compass", "Career Counselling",
      "Discuss your career goals, strengths and possible pathways to help plan your next career move.",
-     "Explore career support"),
+     "Book 15-min free Session"),
 ]
 
 CANDIDATE_PROCESS = [
