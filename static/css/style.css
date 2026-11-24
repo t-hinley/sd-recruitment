@@ -188,6 +188,8 @@ p { margin: 0 0 1em; }
 .job__meta .icon { width: 16px; height: 16px; color: var(--orange); }
 .job p:last-child { margin: 0; }
 .job .btn { flex: none; }
+.job--compact { align-items: center; padding: 18px 20px 18px 26px; }
+.job--compact .job__title { margin: 0; font-size: 1.15rem; }
 .empty-state { display: flex; gap: 20px; align-items: flex-start; max-width: 760px; margin: 0 auto; padding: 28px 30px; border: 2px dashed #C9D2EA; border-radius: var(--radius-lg); background: #fff; }
 .empty-state > .icon { width: 40px; height: 40px; color: var(--blue); }
 .empty-state h3 { margin-bottom: 6px; }
@@ -518,6 +520,9 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
   .field-grid, .choice-grid { grid-template-columns: 1fr; }
   .choice-grid--3 { grid-template-columns: 1fr 1fr; }
   .job { flex-direction: column; align-items: flex-start; padding: 20px; }
+  .job--compact { flex-direction: row; align-items: center; gap: 12px; padding: 14px 14px 14px 18px; }
+  .job--compact .job__title { flex: 1; min-width: 0; font-size: 1rem; line-height: 1.3; overflow-wrap: anywhere; }
+  .job--compact .btn { min-height: 42px; padding: 0 14px; font-size: .9rem; white-space: nowrap; }
   .empty-state { flex-direction: column; padding: 22px; }
   .contact-prompt__actions { width: 100%; }
   .contact-prompt__actions .btn { flex: 1 1 100%; }
