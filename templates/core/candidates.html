@@ -73,7 +73,7 @@
       {% for job in jobs %}
       <li class="job job--compact">
         <h3 class="job__title">{{ job.title }}</h3>
-        <a class="btn btn--orange" href="?job={{ job.pk }}#register">Apply <svg class="icon"><use href="#i-arrow"/></svg><span class="visually-hidden"> for {{ job.title }}</span></a>
+        <a class="btn btn--orange" href="?job={{ job.pk }}#register">Apply <svg class="icon"><use href="#i-external"/></svg><span class="visually-hidden"> for {{ job.title }}</span></a>
       </li>
       {% endfor %}
     </ul>
