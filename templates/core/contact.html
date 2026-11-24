@@ -39,23 +39,12 @@
       {% if sent %}
         {% include "includes/form_success.html" with title="Message sent" again_url="?#enquiry" again_label="Send another message" %}
       {% else %}
-      <h2 class="form-card__title">Send us a message</h2>
+      <h2 class="form-card__title">General enquiry</h2>
+      <p class="form-card__intro">Send us a message and we'll get back to you.</p>
       <form method="post" action="{% url 'core:contact' %}#enquiry" novalidate>
         {% csrf_token %}
         {% include "includes/form_errors.html" %}
         <div class="hp" aria-hidden="true">{{ form.website }}</div>
-        <fieldset class="radio-row{% if form.enquirer_type.errors %} field--error{% endif %}">
-          <legend>I am</legend>
-          <div class="choice-grid choice-grid--3">
-            {% for opt in form.enquirer_type %}
-            <label class="choice choice--radio" for="{{ opt.id_for_label }}">
-              {{ opt.tag }}
-              <span class="choice__box" aria-hidden="true"></span>
-              <span class="choice__label">{{ opt.choice_label }}</span>
-            </label>
-            {% endfor %}
-          </div>
-        </fieldset>
         <div class="field-grid">
           {% include "includes/field.html" with field=form.name wide=True %}
           {% include "includes/field.html" with field=form.email %}

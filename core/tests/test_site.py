@@ -65,7 +65,7 @@ class SiteTests(TestCase):
             ("core:about", "Our recruitment approach"),
             ("core:employers", "Find the Right People for Your Business."),
             ("core:candidates", "Your Next Opportunity Starts Here."),
-            ("core:contact", "Send us a message"),
+            ("core:contact", "General enquiry"),
             ("core:privacy", "Australian Privacy Principles"),
         ]:
             with self.subTest(name=name):
@@ -218,6 +218,12 @@ class SiteTests(TestCase):
                                 ("+61 497 389 693", "+61497389693"), ("(08) 9123 4567", "+61891234567")):
             self.assertEqual(_tel(given), expected)
 
+    def test_contact_form_has_no_employer_candidate_choice(self):
+        r = self.client.get(reverse("core:contact"))
+        self.assertNotContains(r, "An employer")
+        self.assertNotContains(r, "A candidate")
+        self.assertNotContains(r, 'name="contact-enquirer_type"')
+
     def test_contact_page_shows_address_and_map(self):
         r = self.client.get(reverse("core:contact"))
         self.assertContains(r, "Suite 20, 25 Walters Drive, Osborne Park 6017, WA")
@@ -227,15 +233,15 @@ class SiteTests(TestCase):
     def test_contact_enquiry_saves(self):
         r = self.client.post(reverse("core:contact"), {
             "contact-name": "Alex", "contact-email": "alex@example.com", "contact-phone": "",
-            "contact-enquirer_type": "employer", "contact-message": "Do you recruit in Bunbury?",
+            "contact-message": "Do you recruit in Bunbury?",
         })
         self.assertEqual(r.status_code, 302)
-        self.assertEqual(ContactEnquiry.objects.get().enquirer_type, "employer")
+        self.assertEqual(ContactEnquiry.objects.get().enquirer_type, "other")  # general enquiry
         self.assertEqual(len(mail.outbox), 1)
 
     def test_honeypot_blocks_bots(self):
         r = self.client.post(reverse("core:contact"), {
-            "contact-name": "Bot", "contact-email": "bot@example.com", "contact-enquirer_type": "other",
+            "contact-name": "Bot", "contact-email": "bot@example.com",
             "contact-message": "spam", "contact-website": "http://spam.example",
         })
         self.assertEqual(r.status_code, 200)

@@ -208,12 +208,11 @@ class ContactForm(HoneypotMixin, forms.ModelForm):
 
     class Meta:
         model = ContactEnquiry
-        fields = ["name", "email", "phone", "enquirer_type", "message"]
+        fields = ["name", "email", "phone", "message"]  # saved as a general enquiry (enquirer type "Other")
         widgets = {
             "name": forms.TextInput(attrs={"autocomplete": "name"}),
             "email": forms.EmailInput(attrs={"autocomplete": "email", "placeholder": "you@email.com"}),
             "phone": forms.TextInput(attrs={"autocomplete": "tel", "inputmode": "tel", "placeholder": "Optional"}),
-            "enquirer_type": forms.RadioSelect,
             "message": forms.Textarea(attrs={"rows": 5, "placeholder": "How can we help?"}),
         }
 
