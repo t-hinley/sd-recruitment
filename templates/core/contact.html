@@ -27,6 +27,12 @@
         </ul>
       </div>
       {% endif %}
+      {% if business.address %}
+      <div class="map-embed">
+        <iframe title="Map showing {{ business.address }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.google.com/maps?q={{ business.address|urlencode }}&amp;output=embed"></iframe>
+      </div>
+      {% endif %}
       <div class="quick-links">
         <a class="quick-link" href="{% url 'core:employers' %}#vacancy">
           <span class="quick-link__icon quick-link__icon--orange"><svg class="icon"><use href="#i-briefcase"/></svg></span>

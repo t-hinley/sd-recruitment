@@ -17,7 +17,8 @@ BUSINESS = {
     "phone_display": _PHONE,
     "phone_tel": re.sub(r"[^0-9+]", "", _PHONE),
     "email": os.environ.get("BUSINESS_EMAIL", ""),
-    "address": os.environ.get("BUSINESS_ADDRESS", ""),
+    # Same office as SD Commercial. Set BUSINESS_ADDRESS in .env to change it.
+    "address": os.environ.get("BUSINESS_ADDRESS", "Suite 20, 25 Walters Drive, Osborne Park 6017, WA"),
     "hours": os.environ.get("BUSINESS_HOURS", "Monday to Friday, 9:00 am – 5:00 pm"),
     "service_area": os.environ.get("BUSINESS_SERVICE_AREA", "Australia"),
 }

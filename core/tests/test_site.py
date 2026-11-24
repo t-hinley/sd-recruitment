@@ -203,6 +203,12 @@ class SiteTests(TestCase):
         r = self.client.post(reverse("core:candidates"), candidate_data(**{"candidate-resume": big}))
         self.assertContains(r, "The file is too large")
 
+    def test_contact_page_shows_address_and_map(self):
+        r = self.client.get(reverse("core:contact"))
+        self.assertContains(r, "Suite 20, 25 Walters Drive, Osborne Park 6017, WA")
+        self.assertContains(r, 'src="https://www.google.com/maps?q=Suite%2020%2C%2025%20Walters%20Drive%2C%20Osborne%20Park%206017%2C%20WA&amp;output=embed"')
+        self.assertContains(self.client.get(reverse("core:home")), "Suite 20, 25 Walters Drive")  # footer
+
     def test_contact_enquiry_saves(self):
         r = self.client.post(reverse("core:contact"), {
             "contact-name": "Alex", "contact-email": "alex@example.com", "contact-phone": "",
