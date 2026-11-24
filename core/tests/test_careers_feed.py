@@ -99,7 +99,7 @@ class CareersFeedTests(TestCase):
         r = self.client.get(reverse("core:candidates"))
         self.assertContains(r, "CENTRE DIRECTOR")
         self.assertContains(r, f'href="{PAGE}/jobs/{DIRECTOR}" target="_blank" rel="noopener noreferrer"')
-        self.assertContains(r, "View &amp; Apply")
+        self.assertContains(r, "Apply <svg")
         self.assertContains(r, f'href="{PAGE}" target="_blank"')
         self.assertContains(r, "Chef &lt;de partie&gt;")
         self.assertNotContains(r, "No roles are advertised right now")
