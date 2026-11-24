@@ -77,7 +77,7 @@ EMPLOYER_BENEFITS = [
 
 # slug -> (icon, title, examples). The slugs are also the choices on the forms.
 INDUSTRIES = [
-    ("healthcare", "heart", "Healthcare & Aged Care",
+    ("healthcare", "heart", "Healthcare & Support Services",
      "Clinical, allied health, medical administration and aged care roles."),
     ("hospitality", "store", "Hospitality, Retail & Administration",
      "Retail managers, restaurant and café managers, chefs and administration roles."),

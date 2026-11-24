@@ -88,7 +88,7 @@ class SiteTests(TestCase):
 
     def test_employers_page_sections(self):
         r = self.client.get(reverse("core:employers"))
-        for text in ("Save time", "Healthcare &amp; Aged Care", "Engineering, Construction &amp; Trades",
+        for text in ("Save time", "Healthcare &amp; Support Services", "Engineering, Construction &amp; Trades",
                      "Understand your vacancy", "Need help finding the right people?"):
             self.assertContains(r, text)
         self.assertGreaterEqual(r.content.decode().count('href="#vacancy"'), 1)
