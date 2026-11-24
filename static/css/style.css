@@ -81,14 +81,15 @@ p { margin: 0 0 1em; }
 .nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 /* ---------- Home hero ---------- */
-.hero { position: relative; overflow: hidden; background: linear-gradient(180deg, #fff 0%, #fff 76%, var(--grey) 100%); min-height: 580px; display: flex; align-items: center; }
-.hero__inner { position: relative; z-index: 1; width: 100%; padding-top: 64px; padding-bottom: 72px; }
-.hero__copy { max-width: 600px; }
-/* Photo fills the right side and fades into white behind the text, as in the homepage mockup. */
-.hero__media { position: absolute; top: 0; right: 0; bottom: 0; width: 46%; max-width: 640px; }
-.hero__media img { width: 100%; height: 100%; object-fit: cover; object-position: 55% 40%; }
-.hero__media::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,.75) 8%, rgba(255,255,255,.25) 18%, rgba(255,255,255,0) 28%); }
-.hero__media::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 18%; background: linear-gradient(180deg, rgba(243,245,248,0), var(--grey)); }
+.hero { background: linear-gradient(180deg, #fff 0%, #fff 70%, var(--grey) 100%); overflow: hidden; }
+/* Text and photo sit inside the page frame. The photo is shown whole, at its own shape, and fades
+   into the background on its left and bottom edges, as in the homepage mockup. */
+.hero__inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 531px); gap: 24px; align-items: end; }
+.hero__copy { align-self: center; padding: 48px 0 64px; max-width: 600px; }
+.hero__media { position: relative; padding-top: 32px; }
+.hero__media img { display: block; width: 100%; height: auto; }
+.hero__media::before { content: ""; position: absolute; top: 32px; right: 0; bottom: 0; left: 0; background: linear-gradient(90deg, #fff 0%, rgba(255,255,255,.7) 12%, rgba(255,255,255,0) 34%), linear-gradient(180deg, #fff 0%, rgba(255,255,255,0) 9%); }
+.hero__media::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 20%; background: linear-gradient(180deg, rgba(243,245,248,0), var(--grey)); }
 .hero__title { font-size: clamp(2.3rem, 4.3vw, 3.45rem); line-height: 1.08; margin-bottom: 20px; }
 .hero__title > span, .hero__title { text-wrap: balance; }
 .hero__lead { font-size: 1.15rem; max-width: 34em; color: var(--text); margin-bottom: 0; }
@@ -357,9 +358,7 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
   .site-nav ul a[aria-current="page"] { padding-left: 14px; }
   .site-nav__ctas { display: grid; gap: 12px; margin-top: 24px; }
   .site-nav__ctas .btn { display: flex; min-height: 52px; color: #fff; }
-  .hero { min-height: 480px; }
-  .hero__media { width: 48%; }
-  .hero__copy { max-width: 440px; }
+  .hero__inner { grid-template-columns: minmax(0, 1fr) minmax(0, 44%); }
   .card-grid--4, .industry-list { grid-template-columns: repeat(2, 1fr); }
   .card-grid--3 { grid-template-columns: repeat(2, 1fr); }
   .steps--4 { grid-template-columns: repeat(2, 1fr); }
@@ -372,12 +371,11 @@ legend { padding: 0; margin-bottom: 14px; color: var(--blue-ink); font-weight: 8
 @media (max-width: 640px) {
   .container { padding: 0 16px; }
   h1 { font-size: 2rem; }
-  .hero { flex-direction: column; align-items: stretch; min-height: 0; }
-  .hero__inner { padding-top: 28px; padding-bottom: 0; }
-  /* Phones: photo under the text, fading in from white at the top. */
-  .hero__media { position: relative; order: 2; width: 100%; max-width: none; height: 340px; margin-top: 4px; }
-  .hero__media img { object-position: 55% 35%; }
-  .hero__media::before { background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0) 22%); }
+  .hero__inner { grid-template-columns: 1fr; gap: 0; }
+  .hero__copy { padding: 28px 0 8px; }
+  /* Phones: the whole photo under the text, fading in from white at the top. */
+  .hero__media { padding-top: 0; max-width: 531px; }
+  .hero__media::before { top: 0; bottom: auto; width: auto; right: 0; height: 22%; background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0) 100%); }
   .hero__title { font-size: 2.3rem; margin-bottom: 14px; }
   .hero__lead { font-size: 1.04rem; }
   .pathways { grid-template-columns: 1fr; gap: 12px; }
