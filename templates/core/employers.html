@@ -43,12 +43,11 @@
     </div>
     <div class="card-grid card-grid--4">
       {% for slug, icon, title, examples in industries %}
-      <a class="industry" href="?industry={{ slug }}#vacancy">
+      <div class="industry">
         <span class="industry__icon"><svg class="icon"><use href="#i-{{ icon }}"/></svg></span>
         <h3>{{ title }}</h3>
         <p>{{ examples }}</p>
-        <span class="industry__link">Submit a vacancy <svg class="icon"><use href="#i-arrow"/></svg></span>
-      </a>
+      </div>
       {% endfor %}
     </div>
   </div>
