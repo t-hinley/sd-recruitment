@@ -7,6 +7,7 @@ production. See ``.env.example`` for the full list.
 """
 
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -199,6 +200,8 @@ AIRTABLE_TIMEOUT = int(os.environ.get("AIRTABLE_TIMEOUT", "8"))
 # Set it to empty in .env to switch it off (then only jobs added in the admin show).
 # ---------------------------------------------------------------------------
 MANATAL_CAREERS_ACCOUNT = os.environ.get("MANATAL_CAREERS_ACCOUNT", "sd-recruitment").strip()
+if len(sys.argv) > 1 and sys.argv[1] == "test":
+    MANATAL_CAREERS_ACCOUNT = ""  # tests never call careers-page.com (core/tests/test_careers_feed.py fakes it)
 MANATAL_CACHE_MINUTES = int(os.environ.get("MANATAL_CACHE_MINUTES", "15"))
 MANATAL_TIMEOUT = int(os.environ.get("MANATAL_TIMEOUT", "6"))
 
