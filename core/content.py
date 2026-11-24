@@ -27,7 +27,7 @@ BUSINESS = {
 # ---- Home --------------------------------------------------------------------------------
 HOME_HIGHLIGHTS = [
     ("award", "Quality talent"),
-    ("target", "Role fit & cultural match"),
+    ("dartboard", "Role fit & cultural match"),
     ("users", "Long-term partnerships"),
 ]
 
