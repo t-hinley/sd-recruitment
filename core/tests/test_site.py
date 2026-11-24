@@ -203,6 +203,21 @@ class SiteTests(TestCase):
         r = self.client.post(reverse("core:candidates"), candidate_data(**{"candidate-resume": big}))
         self.assertContains(r, "The file is too large")
 
+    def test_contact_details_shown(self):
+        r = self.client.get(reverse("core:contact"))
+        self.assertContains(r, 'href="tel:+61497389693"')
+        self.assertContains(r, "0497 389 693")
+        self.assertContains(r, 'href="mailto:admin@sd-recruitment.com"')
+        home = self.client.get(reverse("core:home"))
+        self.assertContains(home, "admin@sd-recruitment.com")  # footer
+        self.assertContains(home, 'href="tel:+61497389693"')  # footer and contact prompt
+
+    def test_phone_link_format(self):
+        from core.content import _tel
+        for given, expected in (("0497 389 693", "+61497389693"), ("+61 0497389693", "+61497389693"),
+                                ("+61 497 389 693", "+61497389693"), ("(08) 9123 4567", "+61891234567")):
+            self.assertEqual(_tel(given), expected)
+
     def test_contact_page_shows_address_and_map(self):
         r = self.client.get(reverse("core:contact"))
         self.assertContains(r, "Suite 20, 25 Walters Drive, Osborne Park 6017, WA")

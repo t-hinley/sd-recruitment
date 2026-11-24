@@ -7,17 +7,28 @@ Employer Page Content and Candidate Website Content).
 import os
 import re
 
-_PHONE = os.environ.get("BUSINESS_PHONE", "").strip()
+_PHONE = os.environ.get("BUSINESS_PHONE", "0497 389 693").strip()
 
-# Contact details. Fill these in (or set them in .env) before going live. Anything left empty
-# is simply not shown on the site.
+
+def _tel(number):
+    """Phone number for tap-to-call links, in international form: '0497 389 693' -> '+61497389693'."""
+    digits = re.sub(r"[^0-9+]", "", number)
+    if digits.startswith("+610"):
+        digits = "+61" + digits[4:]
+    elif digits.startswith("0"):
+        digits = "+61" + digits[1:]
+    return digits
+
+
+# Contact details (set BUSINESS_PHONE / BUSINESS_EMAIL / BUSINESS_ADDRESS / BUSINESS_HOURS in .env to
+# change them). Anything set to empty is simply not shown on the site.
 BUSINESS = {
     "name": "SD Recruitment",
     "tagline": "Match Talent, Drive Success.",
     "phone_display": _PHONE,
-    "phone_tel": re.sub(r"[^0-9+]", "", _PHONE),
-    "email": os.environ.get("BUSINESS_EMAIL", ""),
-    # Same office as SD Commercial. Set BUSINESS_ADDRESS in .env to change it.
+    "phone_tel": _tel(_PHONE),
+    "email": os.environ.get("BUSINESS_EMAIL", "admin@sd-recruitment.com").strip(),
+    # Same office as SD Commercial.
     "address": os.environ.get("BUSINESS_ADDRESS", "Suite 20, 25 Walters Drive, Osborne Park 6017, WA"),
     "hours": os.environ.get("BUSINESS_HOURS", "Monday to Friday, 9:00 am – 5:00 pm"),
     "service_area": os.environ.get("BUSINESS_SERVICE_AREA", "Australia"),
