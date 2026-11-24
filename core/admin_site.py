@@ -102,15 +102,23 @@ class SDAdminSite(admin.AdminSite):
         from . import reports
         if not request.user.is_superuser:
             raise PermissionDenied
-        form = reports.ReportForm(request.GET or None)
-        if request.GET and form.is_valid():
+        # The dashboard links here with only ?format=pdf (or csv): pre-select it without showing errors.
+        if "report" in request.GET:
+            form = reports.ReportForm(request.GET)
+        else:
+            form = reports.ReportForm(initial={"format": request.GET.get("format")})
+        if form.is_bound and form.is_valid():
             d = form.cleaned_data
-            return reports.csv_response(d["report"], d["date_from"], d["date_to"])
+            return reports.response(d["report"], d["date_from"], d["date_to"], d["format"])
         chosen = form["report"].value() or reports.CANDIDATES
         cards = [{"value": v, "title": t, "help": h, "icon": ICONS[i], "checked": v == chosen}
                  for v, (t, h, i) in reports.REPORT_CARDS.items()]
+        chosen_fmt = form["format"].value() or reports.CSV
+        formats = [{"value": v, "label": label, "help": reports.FORMAT_HELP[v], "checked": v == chosen_fmt}
+                   for v, label in reports.FORMATS]
         return TemplateResponse(request, "admin/reports.html", {
-            **self.each_context(request), "title": "Reports", "form": form, "report_cards": cards})
+            **self.each_context(request), "title": "Reports", "form": form, "report_cards": cards,
+            "formats": formats})
 
     # ---- shared context ----------------------------------------------------
     def each_context(self, request):

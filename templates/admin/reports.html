@@ -7,7 +7,7 @@
 
 {% block content %}
 <h1 class="sdh1">Reports</h1>
-<p class="rp-lead">Download candidates, vacancies or contact enquiries for any period as a CSV file (opens in Excel).</p>
+<p class="rp-lead">Download candidates, vacancies or contact enquiries for any period, as a CSV file (opens in Excel) or a PDF.</p>
 
 <form method="get" class="rp" id="reportform" novalidate>
   {% if form.errors %}<p class="rp-error" role="alert">Please correct the details below.</p>{% endif %}
@@ -54,11 +54,22 @@
     <p class="rp-hint">Leave both dates empty to include every date.</p>
   </section>
 
+  <section class="rp-step">
+    <h2><span class="rp-n">3</span> Choose a format</h2>
+    <div class="rp-formats" role="radiogroup" aria-label="Format">
+      {% for f in formats %}
+      <label class="rp-fmt">
+        <input type="radio" name="format" value="{{ f.value }}" {% if f.checked %}checked{% endif %}>
+        <span><b>{{ f.label }}</b><small>{{ f.help }}</small></span>
+      </label>
+      {% endfor %}
+    </div>
+  </section>
 
   <div class="rp-actions">
     <button type="submit" class="rp-download">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg>
-      Download CSV
+      <span data-download-label>Download</span>
     </button>
     <p class="rp-note">These files contain personal information. Keep them private and delete them when you no longer need them.</p>
   </div>

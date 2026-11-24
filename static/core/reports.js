@@ -17,3 +17,16 @@
     });
   });
 })();
+
+// Show the chosen format on the download button ("Download CSV" / "Download PDF").
+(function () {
+  var form = document.getElementById('reportform');
+  var label = form && form.querySelector('[data-download-label]');
+  if (!label) return;
+  function update() {
+    var f = form.querySelector('input[name=format]:checked');
+    label.textContent = 'Download ' + (f ? f.value.toUpperCase() : 'CSV');
+  }
+  form.querySelectorAll('input[name=format]').forEach(function (r) { r.addEventListener('change', update); });
+  update();
+})();

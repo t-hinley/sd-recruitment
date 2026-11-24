@@ -81,6 +81,46 @@ class AdminTests(TestCase):
         self.assertIn("Cafe Co", self.client.get(reverse("admin:reports"), {"report": "vacancies"}).content.decode())
         self.assertIn("Alex", self.client.get(reverse("admin:reports"), {"report": "contact"}).content.decode())
 
+    def _pdf_text(self, content):
+        """Text drawn in a PDF made by ReportLab (page streams are ASCII85 + zlib encoded)."""
+        import base64
+        import re
+        import zlib
+        out = []
+        for m in re.finditer(rb"/Filter \[ /ASCII85Decode /FlateDecode \].*?stream\r?\n(.*?)endstream", content, re.S):
+            data = m.group(1).strip()
+            if data.endswith(b"~>"):
+                data = data[:-2]
+            out.append(zlib.decompress(base64.a85decode(data)).decode("latin-1"))
+        return " ".join(re.findall(r"\((.*?)\) Tj", " ".join(out)))
+
+    def test_pdf_exports(self):
+        self.client.force_login(self.admin)
+        for report, expected in (("candidates", "Jane Citizen"), ("vacancies", "Cafe Co"), ("contact", "Alex")):
+            r = self.client.get(reverse("admin:reports"), {"report": report, "format": "pdf"})
+            self.assertEqual(r["Content-Type"], "application/pdf", report)
+            self.assertIn(f"sd-recruitment-{report}-", r["Content-Disposition"])
+            self.assertTrue(r.content.startswith(b"%PDF"))
+            text = self._pdf_text(r.content)
+            self.assertIn(expected, text, report)
+            self.assertIn("Confidential", text)
+
+    def test_pdf_with_dates_and_no_records(self):
+        self.client.force_login(self.admin)
+        r = self.client.get(reverse("admin:reports"), {"report": "vacancies", "format": "pdf",
+                                                       "date_from": "2001-01-01", "date_to": "2001-01-31"})
+        text = self._pdf_text(r.content)
+        self.assertIn("No records for this period.", text)
+        self.assertIn("1 Jan 2001", text)
+
+    def test_dashboard_links_preselect_format(self):
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get(reverse("admin:index")), "Export reports (PDF)")
+        r = self.client.get(reverse("admin:reports"), {"format": "pdf"})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'value="pdf" checked')
+        self.assertNotContains(r, "This field is required")
+
     def test_profile_and_changelists(self):
         self.client.force_login(self.admin)
         self.assertContains(self.client.get(reverse("admin:profile")), "Administrator")

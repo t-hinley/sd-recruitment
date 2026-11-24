@@ -70,7 +70,7 @@ The admin has the same design as the other SD admins. It includes:
 - **Current opportunities:** add, edit or hide the jobs shown on the Candidates page. Each job gets
   an *Apply* button that opens the form linked to that job.
 - **Airtable status** on each vacancy and candidate (Sent, Failed or Not set up), with a *send again* action.
-- **Reports:** CSV exports for administrators.
+- **Reports:** CSV (every field, opens in Excel) or PDF (main fields, ready to print or share) for administrators, for any date range.
 - **Roles:** *Administrators* have full access. *Staff* (the "Staff" group) can work on records and
   manage jobs, but can't delete records, export reports or manage users.
 - Email notifications for each new submission. CVs are never emailed.
