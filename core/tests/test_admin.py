@@ -56,8 +56,11 @@ class AdminTests(TestCase):
         self.client.force_login(self.admin)
         r = self.client.get(reverse("admin:index"))
         self.assertContains(r, 'id="sdside"')
-        self.assertContains(r, "New candidates")
-        self.assertContains(r, "New vacancies")
+        self.assertContains(r, "Needs attention")
+        self.assertContains(r, 'aria-label="New candidates: 1"')
+        self.assertContains(r, 'aria-label="New vacancies: 1"')
+        self.assertContains(r, 'aria-label="Candidates: 1"')
+        self.assertNotContains(r, "Airtable send failures")  # only shown when something failed
         self.assertContains(r, "Current opportunities")
         self.assertContains(r, "Hospitality &amp; Tourism")
         self.assertContains(r, "Resume support")
@@ -178,7 +181,10 @@ class FollowUpTests(TestCase):
                          {"action": "assign_to_me", "_selected_action": [self.e.pk]})
         self.e.refresh_from_db()
         self.assertEqual(self.e.assigned_to, self.staff)
-        self.assertContains(self.client.get(reverse("admin:index")), "Assigned to me (open)")
+        r = self.client.get(reverse("admin:index"))
+        self.assertContains(r, "1 open item assigned to you")
+        self.assertContains(r, "1 candidate</a>")
+        self.assertNotContains(r, "0 vacancies")
 
 
 @override_settings(STORAGES=STATIC, MEDIA_ROOT=MEDIA)

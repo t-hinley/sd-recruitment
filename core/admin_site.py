@@ -168,29 +168,43 @@ class SDAdminSite(admin.AdminSite):
 
         mine = sum(open_(qs).filter(assigned_to=request.user).count() for qs in (cands, vacs, contacts))
         unassigned = sum(open_(qs).filter(assigned_to__isnull=True).count() for qs in (cands, vacs, contacts))
-        cards = [
-            ("Assigned to me (open)", mine, "user", "blue", cand_url + "?assigned=me", ""),
-            ("New candidates", cands.filter(status="new").count(), "new", "orange", cand_url + "?status__exact=new", "warn"),
-            ("New vacancies", vacs.filter(status="new").count(), "vacancyenquiry", "orange", vac_url + "?status__exact=new", "warn"),
-            ("New contact enquiries", contacts.filter(status="new").count(), "contactenquiry", "teal",
-             contact_url + "?status__exact=new", ""),
-            ("Candidates", cands.count(), "candidateregistration", "blue", cand_url, ""),
-            ("Candidates with a CV", cands.exclude(resume="").count(), "cv", "purple", cand_url, ""),
-            ("Vacancies being recruited", vacs.filter(status="recruiting").count(), "group", "green",
-             vac_url + "?status__exact=recruiting", ""),
-            ("Placements", vacs.filter(status="placed").count() + cands.filter(status="placed").count(), "placed", "green",
-             vac_url + "?status__exact=placed", ""),
-            ("Live opportunities", Job.objects.filter(is_published=True).count(), "job", "pink",
-             job_url + "?is_published__exact=1", ""),
-            ("Unassigned (open)", unassigned, "group", "amber", cand_url + "?assigned=none", ""),
-            ("Airtable send failures", cands.filter(airtable_status="failed").count()
-             + vacs.filter(airtable_status="failed").count(), "alert", "red",
-             cand_url + "?airtable_status__exact=failed", "bad"),
-            ("Received this month", sum(qs.filter(created_at__date__gte=month_start).count()
-                                        for qs in (cands, vacs, contacts)), "calendar", "amber", cand_url, ""),
+        failed = cands.filter(airtable_status="failed").count() + vacs.filter(airtable_status="failed").count()
+
+        def rows(items):
+            """Horizontal bars for one group of counts. Each group has its own scale (longest bar = largest
+            count in that group), so unrelated numbers are never compared on one axis."""
+            top = max([n for _, n, *_ in items] or [1]) or 1
+            return [{"label": label, "n": n, "icon": icon(ic, 18), "tone": tone, "url": url,
+                     "pct": max(3, round(100 * n / top)) if n else 0} for label, n, ic, tone, url in items]
+
+        # Things someone needs to act on.
+        attention = [
+            ("New candidates", cands.filter(status="new").count(), "candidateregistration", "orange",
+             cand_url + "?status__exact=new"),
+            ("New vacancies", vacs.filter(status="new").count(), "vacancyenquiry", "orange",
+             vac_url + "?status__exact=new"),
+            ("New contact enquiries", contacts.filter(status="new").count(), "contactenquiry", "orange",
+             contact_url + "?status__exact=new"),
+            ("Unassigned (open)", unassigned, "group", "orange", cand_url + "?assigned=none"),
         ]
-        cards = [{"label": l, "value": v, "icon": icon(i, 22), "tone": t, "url": u, "flag": f if v else ""}
-                 for (l, v, i, t, u, f) in cards]
+        if failed:  # status, not a series: only shown when something actually failed
+            attention.append(("Airtable send failures", failed, "alert", "bad",
+                              cand_url + "?airtable_status__exact=failed"))
+        # Overall picture.
+        glance = [
+            ("Candidates", cands.count(), "candidateregistration", "blue", cand_url),
+            ("Candidates with a CV", cands.exclude(resume="").count(), "cv", "blue", cand_url),
+            ("Vacancies being recruited", vacs.filter(status="recruiting").count(), "group", "blue",
+             vac_url + "?status__exact=recruiting"),
+            ("Placements", vacs.filter(status="placed").count() + cands.filter(status="placed").count(), "placed",
+             "blue", vac_url + "?status__exact=placed"),
+            ("Live opportunities", Job.objects.filter(is_published=True).count(), "job", "blue",
+             job_url + "?is_published__exact=1"),
+            ("Received this month", sum(qs.filter(created_at__date__gte=month_start).count()
+                                        for qs in (cands, vacs, contacts)), "calendar", "blue", cand_url),
+        ]
+        attention_rows, glance_rows = rows(attention), rows(glance)
+        waiting_total = sum(r["n"] for r in attention_rows[:3])
 
         by_status = dict(cands.values_list("status").annotate(n=Count("id")))
         cand_status_rows = bars([(label, by_status.get(v, 0)) for v, label in CandidateRegistration.STATUSES])
@@ -233,7 +247,16 @@ class SDAdminSite(admin.AdminSite):
 
         extra_context = {
             **(extra_context or {}),
-            "cards": cards,
+            "attention_rows": attention_rows, "glance_rows": glance_rows, "waiting_total": waiting_total,
+            "mine": mine, "icon_user": icon("user", 22),
+            "mine_parts": [p for p in (
+                {"label": one if n == 1 else many, "n": n, "url": url + "?assigned=me"}
+                for one, many, n, url in (
+                    ("candidate", "candidates", open_(cands).filter(assigned_to=request.user).count(), cand_url),
+                    ("vacancy", "vacancies", open_(vacs).filter(assigned_to=request.user).count(), vac_url),
+                    ("contact enquiry", "contact enquiries",
+                     open_(contacts).filter(assigned_to=request.user).count(), contact_url),
+                )) if p["n"]],
             "cand_status_rows": cand_status_rows, "cand_total": cands.count(),
             "vac_status_rows": vac_status_rows, "vac_total": vacs.count(),
             "industry_rows": industry_rows, "support_rows": support_rows,

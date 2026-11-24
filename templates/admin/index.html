@@ -9,14 +9,40 @@
 <h1 class="sdh1">Overview</h1>
 {% if is_admin %}<p class="sdreportlink"><a class="button" href="{% url 'admin:reports' %}">Export reports (CSV)</a></p>{% endif %}
 
-<div class="sdcards">
-  {% for c in cards %}
-  <a class="sdcard {{ c.flag }}" href="{{ c.url }}">
-    <span class="sdtile {{ c.tone }}">{{ c.icon|safe }}</span>
-    <b>{{ c.value }}</b>
-    <span class="sdlbl">{{ c.label }}</span>
-  </a>
-  {% endfor %}
+<div class="sdmine">
+  <span class="sdtile blue">{{ icon_user|safe }}</span>
+  <div>
+    <b>{% if mine %}{{ mine }} open item{{ mine|pluralize }} assigned to you{% else %}Nothing open is assigned to you{% endif %}</b>
+    {% if not mine %}<span class="sdmine__parts">New items are listed under Needs attention.</span>{% endif %}
+    <span class="sdmine__parts">{% for p in mine_parts %}<a href="{{ p.url }}">{{ p.n }} {{ p.label }}</a>{% if not forloop.last %} &middot; {% endif %}{% endfor %}</span>
+  </div>
+</div>
+
+<div class="sdpanels">
+  <section class="sdpanel">
+    <header><h3>Needs attention</h3><span>{{ waiting_total }} new waiting</span></header>
+    <ul class="sdhbars sdhbars--orange">
+      {% for r in attention_rows %}
+      <li><a href="{{ r.url }}" class="{% if r.tone == 'bad' %}is-bad{% endif %}" aria-label="{{ r.label }}: {{ r.n }}">
+        <span class="hl"><span class="hi">{{ r.icon|safe }}</span>{{ r.label }}</span>
+        <span class="ht" aria-hidden="true"><i style="width:{{ r.pct }}%"></i></span>
+        <b>{{ r.n }}</b>
+      </a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  <section class="sdpanel">
+    <header><h3>At a glance</h3><span>All time, except where shown</span></header>
+    <ul class="sdhbars">
+      {% for r in glance_rows %}
+      <li><a href="{{ r.url }}" aria-label="{{ r.label }}: {{ r.n }}">
+        <span class="hl"><span class="hi">{{ r.icon|safe }}</span>{{ r.label }}</span>
+        <span class="ht" aria-hidden="true"><i style="width:{{ r.pct }}%"></i></span>
+        <b>{{ r.n }}</b>
+      </a></li>
+      {% endfor %}
+    </ul>
+  </section>
 </div>
 
 <div class="sdpanels">
