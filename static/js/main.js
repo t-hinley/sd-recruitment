@@ -36,18 +36,120 @@
         var service = link.getAttribute("data-service");
         if (service) {
           var box = support.querySelector('input[value="' + service + '"]');
-          if (box) box.checked = true;
+          if (box && !box.checked) {
+            box.checked = true;
+            box.dispatchEvent(new Event("change", { bubbles: true }));
+          }
         }
         e.preventDefault();
         // On phones the intro text sits above the form, so go straight to the ticked options.
         var target = window.innerWidth <= 980 ? support : document.getElementById("register");
         if (target) target.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
         history.replaceState(null, "", service ? "?service=" + service + "#register" : "#register");
-        var first = support.querySelector("input");
+        var first = support.querySelector(".ms__add") || support.querySelector("input");
         if (first) setTimeout(function () { first.focus({ preventScroll: true }); }, 450);
       });
     });
   }
+
+  // Multi-choice groups as an Airtable-style dropdown: chosen options show as removable pills and a
+  // "+ Add" button opens a list of the remaining options. The real checkboxes stay in the form
+  // (hidden), so the form still submits normally, and without JavaScript the plain chips show.
+  document.querySelectorAll("[data-multiselect]").forEach(function (group, gi) {
+    var inputs = Array.prototype.slice.call(group.querySelectorAll("input[type=checkbox]"));
+    if (!inputs.length) return;
+    var labelOf = function (input) { return input.closest("label").textContent.trim(); };
+    var listId = "ms-list-" + gi;
+
+    var ms = document.createElement("div");
+    ms.className = "ms";
+    ms.innerHTML =
+      '<div class="ms__control"><div class="ms__values"></div>' +
+      '<button type="button" class="ms__add" aria-haspopup="listbox" aria-expanded="false" aria-controls="' + listId + '">' +
+      '<svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span></span></button></div>' +
+      '<div class="ms__menu" id="' + listId + '" role="listbox" aria-multiselectable="true" hidden></div>';
+    group.hidden = true;
+    group.parentNode.insertBefore(ms, group.nextSibling);
+
+    var values = ms.querySelector(".ms__values"), add = ms.querySelector(".ms__add"),
+        addText = add.querySelector("span"), menu = ms.querySelector(".ms__menu");
+    var legend = group.closest("fieldset") && group.closest("fieldset").querySelector("legend");
+    if (legend) add.setAttribute("aria-label", "Add " + legend.textContent.replace(/\(optional\)|\*/g, "").trim());
+
+    var close = function (focusAdd) {
+      menu.hidden = true;
+      add.setAttribute("aria-expanded", "false");
+      if (focusAdd) add.focus();
+    };
+    var render = function () {
+      values.innerHTML = "";
+      menu.innerHTML = "";
+      var remaining = 0;
+      inputs.forEach(function (input) {
+        if (input.checked) {
+          var pill = document.createElement("span");
+          pill.className = "ms__pill";
+          pill.innerHTML = '<span></span><button type="button" class="ms__remove"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>';
+          pill.firstChild.textContent = labelOf(input);
+          var rm = pill.querySelector("button");
+          rm.setAttribute("aria-label", "Remove " + labelOf(input));
+          rm.addEventListener("click", function () {
+            input.checked = false;
+            render();
+            add.focus();
+          });
+          values.appendChild(pill);
+        } else {
+          remaining++;
+          var opt = document.createElement("button");
+          opt.type = "button";
+          opt.className = "ms__option";
+          opt.setAttribute("role", "option");
+          opt.setAttribute("aria-selected", "false");
+          opt.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span></span>';
+          opt.lastChild.textContent = labelOf(input);
+          opt.addEventListener("click", function () {
+            input.checked = true;
+            render();
+            if (menu.querySelector(".ms__option")) { menu.hidden = false; menu.querySelector(".ms__option").focus(); }
+            else close(true);
+          });
+          menu.appendChild(opt);
+        }
+      });
+      var any = inputs.some(function (i) { return i.checked; });
+      addText.textContent = any ? "Add" : group.getAttribute("data-placeholder") || "Add";
+      ms.classList.toggle("has-values", any);
+      add.hidden = remaining === 0;
+      if (remaining === 0) close(false);
+    };
+
+    add.addEventListener("click", function () {
+      var open = menu.hidden;
+      menu.hidden = !open;
+      add.setAttribute("aria-expanded", String(open));
+      if (open && menu.firstChild) menu.firstChild.focus();
+    });
+    menu.addEventListener("keydown", function (e) {
+      var items = Array.prototype.slice.call(menu.querySelectorAll(".ms__option"));
+      var i = items.indexOf(document.activeElement);
+      if (e.key === "ArrowDown") { e.preventDefault(); (items[i + 1] || items[0]).focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); (items[i - 1] || items[items.length - 1]).focus(); }
+      else if (e.key === "Escape") { e.preventDefault(); close(true); }
+      else if (e.key === "Tab") { close(false); }
+    });
+    add.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown" && menu.hidden) { e.preventDefault(); add.click(); }
+      if (e.key === "Escape") close(false);
+    });
+    // Close when clicking elsewhere. Options and pills are rebuilt on click, so a click on one that
+    // has just been removed from the page is not an "outside" click.
+    document.addEventListener("click", function (e) {
+      if (e.target.isConnected && !ms.contains(e.target)) close(false);
+    });
+    inputs.forEach(function (input) { input.addEventListener("change", render); });
+    render();
+  });
 
   // Resume upload: show the chosen file name, and allow dropping a file.
   document.querySelectorAll(".upload").forEach(function (zone) {

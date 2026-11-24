@@ -1,6 +1,6 @@
 <fieldset class="field field--wide choice-field{% if field.errors %} field--error{% endif %}">
-  <legend class="field__label">{{ field.label }}{% if field.field.required %} <span class="req" aria-hidden="true">*</span>{% else %} <span class="opt">(optional{% if field.help_text %} – {{ field.help_text|lower|cut:"." }}{% endif %})</span>{% endif %}</legend>
-  <div class="chips">
+  <legend class="field__label">{{ field.label }}{% if field.field.required %} <span class="req" aria-hidden="true">*</span>{% else %} <span class="opt">(optional)</span>{% endif %}</legend>
+  <div class="chips" data-multiselect data-placeholder="Choose one or more">
     {% for opt in field %}
     <label class="chip" for="{{ opt.id_for_label }}">
       {{ opt.tag }}
