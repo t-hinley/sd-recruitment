@@ -5,7 +5,7 @@ from django import forms
 from django.conf import settings
 
 from .models import (CANDIDATE_INDUSTRIES, EMPLOYER_INDUSTRIES, EMPLOYMENT_TYPES, EXPERIENCE_LEVELS,
-                     RESUME_PACKAGES, VACANCY_COUNTS, VISA_TYPES, CandidateRegistration, ContactEnquiry, Job,
+                     RESUME_PACKAGES, VACANCY_COUNTS, VISA_TYPES, CandidateRegistration, ContactEnquiry,
                      VacancyEnquiry)
 
 PHONE_RE = re.compile(r"^[0-9 +()\-]{8,20}$")
@@ -124,14 +124,13 @@ class CandidateForm(HoneypotMixin, forms.ModelForm):
               "opportunities and services, as described in the Privacy Policy.",
         error_messages={"required": "Please tick this box so we can contact you."},
     )
-    job = forms.ModelChoiceField(queryset=Job.objects.none(), required=False, widget=forms.HiddenInput)
 
     class Meta:
         model = CandidateRegistration
         fields = [
             "full_name", "phone", "email", "location", "visa_type", "preferred_location", "industry",
             "position_sought", "employment_types", "experience", "resume_package", "criteria_count",
-            "preferred_times", "resume", "job", "consent",
+            "preferred_times", "resume", "consent",
         ]
         labels = {
             "full_name": "Full name",
@@ -163,7 +162,6 @@ class CandidateForm(HoneypotMixin, forms.ModelForm):
         self.fields["criteria_count"].min_value = 1
         self.fields["criteria_count"].max_value = 50
         self.fields["preferred_times"].help_text = "For interview or career counselling sessions. We'll confirm a time with you."
-        self.fields["job"].queryset = Job.objects.filter(is_published=True)
         exts = ", ".join(f".{e}" for e in settings.RESUME_EXTENSIONS)
         self.fields["resume"].widget.attrs["accept"] = exts
         self.fields["resume"].help_text = (

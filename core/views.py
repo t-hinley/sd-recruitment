@@ -11,7 +11,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from . import airtable, careers_feed, content
 from .forms import CandidateForm, ContactForm, VacancyForm
-from .models import RESUME_PACKAGES, CandidateRegistration, Job
+from .models import RESUME_PACKAGES, CandidateRegistration
 from .notifications import send_enquiry_notification
 
 SERVICE_KEYS = {key for key, _label in CandidateRegistration.SUPPORT_CHOICES}
@@ -64,23 +64,14 @@ def employers(request):
 
 def candidates(request):
     """Candidates page. ?service=resume|interview|career pre-selects that support option;
-    ?job=<id> links the registration to a current opportunity."""
-    jobs = Job.objects.filter(is_published=True)
+    ?package=<slug> pre-selects a resume package. Current opportunities come from the careers page."""
     service = request.GET.get("service")
-    selected_job = None
-    job_id = request.GET.get("job", "")
-    if job_id.isdigit():
-        selected_job = jobs.filter(pk=int(job_id)).first()
-
     initial = {}
     if service in SERVICE_KEYS:
         initial["support"] = [service]
     package = request.GET.get("package")
     if package in {k for k, _ in RESUME_PACKAGES}:
         initial.update(support=["resume"], resume_package=package)
-    if selected_job:
-        initial.update(job=selected_job, support=["jobs"], position_sought=selected_job.title,
-                       industry=selected_job.industry)
     form = CandidateForm(initial=initial or None)
 
     if request.method == "POST":
@@ -92,15 +83,12 @@ def candidates(request):
             messages.success(request, "Thank you for registering your interest. "
                                       "We've received your details and will be in touch.")
             return redirect(reverse("core:candidates") + "?sent=1#register")
-        selected_job = form.cleaned_data.get("job") if hasattr(form, "cleaned_data") else None
 
     return render(request, "core/candidates.html", {
         "form": form,
         "sent": request.GET.get("sent"),
-        "jobs": jobs,
         "external_jobs": careers_feed.jobs(),
         "careers_page_url": careers_feed.careers_page_url(),
-        "selected_job": selected_job,
         "selected_service": service if service in SERVICE_KEYS else "",
         "price_note": content.PRICE_NOTE,
         "benefits": content.CANDIDATE_BENEFITS,

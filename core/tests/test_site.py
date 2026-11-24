@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from core.models import CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
+from core.models import CandidateRegistration, ContactEnquiry, VacancyEnquiry
 
 MEDIA = tempfile.mkdtemp(prefix="sdr-test-media-")
 
@@ -112,20 +112,6 @@ class SiteTests(TestCase):
     def test_industry_link_preselects_vacancy_industry(self):
         r = self.client.get(reverse("core:employers") + "?industry=construction")
         self.assertContains(r, '<option value="Construction &amp; Trades" selected>')
-
-    def test_jobs_listed_and_apply_preselects(self):
-        job = Job.objects.create(title="Head Chef", industry="Hospitality & Tourism", location="Perth WA",
-                                 summary="Lead a busy kitchen.")
-        Job.objects.create(title="Hidden Role", industry="Healthcare & Nursing", location="Perth", summary="x",
-                           is_published=False)
-        r = self.client.get(reverse("core:candidates"))
-        self.assertContains(r, "Head Chef")
-        self.assertNotContains(r, "Hidden Role")
-        self.assertNotContains(r, "No roles are advertised right now")
-        r = self.client.get(reverse("core:candidates") + f"?job={job.pk}")
-        self.assertContains(r, "Applying for <strong>Head Chef</strong>")
-        self.client.post(reverse("core:candidates"), candidate_data(**{"candidate-job": job.pk}))
-        self.assertEqual(CandidateRegistration.objects.get().job, job)
 
     def test_vacancy_saves_and_emails(self):
         r = self.client.post(reverse("core:employers"), VACANCY)

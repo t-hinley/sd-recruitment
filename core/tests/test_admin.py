@@ -7,7 +7,7 @@ from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from core.models import CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
+from core.models import CandidateRegistration, ContactEnquiry, VacancyEnquiry
 
 STATIC = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
@@ -61,7 +61,8 @@ class AdminTests(TestCase):
         self.assertContains(r, 'aria-label="New vacancies: 1"')
         self.assertContains(r, 'aria-label="Candidates: 1"')
         self.assertNotContains(r, "Airtable send failures")  # only shown when something failed
-        self.assertContains(r, "Current opportunities")
+        self.assertNotContains(r, "Current opportunities")  # jobs come from the careers page
+        self.assertNotContains(r, "Live opportunities")
         self.assertContains(r, "Hospitality &amp; Tourism")
         self.assertContains(r, "Resume support")
         self.assertContains(r, reverse("admin:reports"))
@@ -124,7 +125,7 @@ class AdminTests(TestCase):
     def test_profile_and_changelists(self):
         self.client.force_login(self.admin)
         self.assertContains(self.client.get(reverse("admin:profile")), "Administrator")
-        for name in ("candidateregistration", "vacancyenquiry", "contactenquiry", "job"):
+        for name in ("candidateregistration", "vacancyenquiry", "contactenquiry"):
             self.assertEqual(self.client.get(reverse(f"admin:core_{name}_changelist")).status_code, 200, name)
         self.assertEqual(self.client.get(reverse("admin:core_candidateregistration_change",
                                                  args=[self.cand.pk])).status_code, 200)
@@ -180,7 +181,6 @@ class FollowUpTests(TestCase):
     def test_staff_role_permissions(self):
         codes = set(Group.objects.get(name="Staff").permissions.values_list("codename", flat=True))
         self.assertIn("change_candidateregistration", codes)
-        self.assertIn("add_job", codes)
         self.assertNotIn("delete_candidateregistration", codes)
         self.assertNotIn("add_vacancyenquiry", codes)
 
@@ -210,7 +210,6 @@ class FollowUpTests(TestCase):
         self.assertEqual(self.client.get(reverse("admin:core_candidateregistration_delete",
                                                  args=[self.e.pk])).status_code, 403)
         self.assertEqual(self.client.get(reverse("admin:auth_user_changelist")).status_code, 403)
-        self.assertEqual(self.client.get(reverse("admin:core_job_add")).status_code, 200)  # staff manage jobs
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get(reverse("admin:core_candidateregistration_delete",
                                                  args=[self.e.pk])).status_code, 200)

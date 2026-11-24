@@ -9,7 +9,7 @@ from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
+from .models import CandidateRegistration, ContactEnquiry, VacancyEnquiry
 
 # Small outline icons (24x24, stroke) for the sidebar and dashboard cards.
 ICONS = {
@@ -17,7 +17,6 @@ ICONS = {
     "vacancyenquiry": '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M3 12.5h18"/>',
     "candidateregistration": '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>',
     "contactenquiry": '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5L12 13l8.5-6.5"/>',
-    "job": '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
     "cv": '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/>',
     "placed": '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
     "new": '<path d="M4 5h16v11H8l-4 4z"/>',
@@ -50,9 +49,9 @@ class SDAdminSite(admin.AdminSite):
     index_title = "Website enquiries"
     enable_nav_sidebar = False  # we draw our own sidebar
 
-    MAIN = ["candidateregistration", "vacancyenquiry", "contactenquiry", "job"]
+    MAIN = ["candidateregistration", "vacancyenquiry", "contactenquiry"]
     SHORT = {"candidateregistration": "Candidates", "vacancyenquiry": "Vacancies",
-             "contactenquiry": "General enquiries", "job": "Current opportunities"}  # fit the sidebar
+             "contactenquiry": "General enquiries"}  # fit the sidebar
     SETTINGS = ["user", "group"]
 
     # ---- pages -------------------------------------------------------------
@@ -167,7 +166,6 @@ class SDAdminSite(admin.AdminSite):
         cand_url = reverse("admin:core_candidateregistration_changelist")
         vac_url = reverse("admin:core_vacancyenquiry_changelist")
         contact_url = reverse("admin:core_contactenquiry_changelist")
-        job_url = reverse("admin:core_job_changelist")
         new_total = (cands.filter(status="new").count() + vacs.filter(status="new").count()
                      + contacts.filter(status="new").count())
 
@@ -207,8 +205,6 @@ class SDAdminSite(admin.AdminSite):
              vac_url + "?status__exact=recruiting"),
             ("Placements", vacs.filter(status="placed").count() + cands.filter(status="placed").count(), "placed",
              "blue", vac_url + "?status__exact=placed"),
-            ("Live opportunities", Job.objects.filter(is_published=True).count(), "job", "blue",
-             job_url + "?is_published__exact=1"),
             ("Received this month", sum(qs.filter(created_at__date__gte=month_start).count()
                                         for qs in everything), "calendar", "blue", cand_url),
         ]

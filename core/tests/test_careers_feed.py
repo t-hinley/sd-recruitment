@@ -7,7 +7,6 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core import careers_feed
-from core.models import Job
 
 STATIC = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
@@ -131,13 +130,12 @@ class CareersPageSettingTests(TestCase):
 
 @override_settings(MANATAL_CAREERS_PAGE_URL="", STORAGES=STATIC)
 class CareersFeedOffTests(TestCase):
-    def test_off_shows_admin_jobs_or_empty_state(self):
+    def test_off_shows_empty_state(self):
         with mock.patch("urllib.request.urlopen") as urlopen:
             r = self.client.get(reverse("core:candidates"))
             urlopen.assert_not_called()
         self.assertContains(r, "No roles are advertised right now")
-        Job.objects.create(title="Head Chef", industry="Hospitality & Tourism", location="Perth", summary="x")
-        self.assertContains(self.client.get(reverse("core:candidates")), "Head Chef")
+        self.assertNotContains(r, "See all roles on our careers page")
 
     def test_site_down_with_no_history_shows_empty_state(self):
         cache.clear()

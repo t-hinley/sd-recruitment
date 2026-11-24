@@ -81,26 +81,6 @@ def _list_display(values):
     return ", ".join(values or [])
 
 
-class Job(models.Model):
-    """A current opportunity shown on the Candidates page. Staff add these in the admin."""
-
-    title = models.CharField("Job title", max_length=140)
-    industry = models.CharField(max_length=40, choices=CANDIDATE_INDUSTRIES)
-    location = models.CharField(max_length=120, help_text="e.g. Osborne Park, WA")
-    employment_type = models.CharField(max_length=30, choices=EMPLOYMENT_TYPES, default="Full Time")
-    summary = models.TextField(help_text="Two or three short sentences about the role. Keep it brief.")
-    is_published = models.BooleanField("Show on website", default=True)
-    created_at = models.DateTimeField("Added", auto_now_add=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        verbose_name = "current opportunity"
-        verbose_name_plural = "current opportunities"
-
-    def __str__(self):
-        return f"{self.title} – {self.location}"
-
-
 class VacancyEnquiry(AirtableCopy):
     """'Submit a Vacancy' form on the Employers page. Same fields as the Airtable
     'SD Recruitment | Employer Enquiry Form'."""
@@ -180,8 +160,6 @@ class CandidateRegistration(AirtableCopy):
     criteria_count = models.PositiveSmallIntegerField("Number of selection criteria", null=True, blank=True)
     preferred_times = models.CharField("Preferred days and times", max_length=200, blank=True,
                                        help_text="For interview preparation or career counselling sessions.")
-    job = models.ForeignKey(Job, null=True, blank=True, on_delete=models.SET_NULL, related_name="registrations",
-                            verbose_name="Applied for")
     consent = models.BooleanField("Consent to be contacted", default=False)
     status = models.CharField(max_length=12, choices=STATUSES, default="new")
     created_at = models.DateTimeField(auto_now_add=True)

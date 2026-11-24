@@ -77,7 +77,7 @@ def yes_no(v):
 REPORTS = {
     CANDIDATES: {
         "title": "Candidates",
-        "queryset": lambda: CandidateRegistration.objects.select_related("assigned_to", "job"),
+        "queryset": lambda: CandidateRegistration.objects.select_related("assigned_to"),
         "statuses": CandidateRegistration.STATUSES,
         "columns": [
             ("Received", received, 18),
@@ -91,7 +91,6 @@ REPORTS = {
             ("Position(s) interested in", lambda e: e.position_sought, None),
             ("Employment type", lambda e: e.employment_type_display, None),
             ("Relevant work experience", lambda e: e.experience, 18),
-            ("Applied for", lambda e: e.job.title if e.job else "", None),
             ("Support requested", lambda e: ", ".join(e.support_list), 24),
             ("Resume package", lambda e: e.package_summary, None),
             ("Preferred days and times", lambda e: e.preferred_times, None),

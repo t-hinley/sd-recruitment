@@ -16,7 +16,7 @@ the same way.
 | **Home** `/` | "Connecting Talent with Opportunity.", a short intro, the **For Employers** and **For Candidates** buttons (visible without scrolling, also on phones), three highlights, the two audience cards, a brief summary of services and a contact prompt. |
 | **About Us** `/about/` | Company profile, recruitment approach (4 steps), values and industries. |
 | **Employers** `/employers/` | "Find the Right People for Your Business.", why use a recruitment agency (6 benefits), the industries grid, the 5-step process and the **Submit a Vacancy** form. The button is at the top and the form is at the bottom. |
-| **Candidates** `/candidates/` | "Your Next Opportunity Starts Here.", why work with a recruiter (5 benefits), 3 career support cards, current opportunities, what happens after registering, and the **Register Your Interest** form with an optional CV upload. |
+| **Candidates** `/candidates/` | "Your Next Opportunity Starts Here.", why work with a recruiter (5 benefits), 3 career support cards, current opportunities (from the careers page), what happens after registering, and the **Register Your Interest** form with an optional CV upload. |
 | **Career Services** `/career-services/` | Resume packages (Student $50, Basic $95, Professional $200, Executive $350, Selection Criteria $35 per criterion), Interview Preparation ($95, 45 minutes) and Career Counselling (first 15 minutes free, follow-up 30 minutes $65), with prices. Every button opens the Candidates page **Register Your Interest** form with that service (and resume package) already chosen. Linked from the Candidates page cards and the footer. |
 | **Contact Us** `/contact/` | Contact details and a short general enquiry form. |
 | **Privacy Policy** `/privacy/` | The privacy notice that the candidate consent tick box links to. |
@@ -71,12 +71,10 @@ The admin has the same design as the other SD admins. It includes:
   button.
 - **Career services on candidate records:** the resume package, number of selection criteria and preferred days/times appear on the candidate record, in emails and in reports. No online payment: the team contacts the person to confirm and invoice. These extra details are not sent to Airtable (it has no columns for them).
 - **Jobs from Manatal (careers-page.com):** jobs the client posts on their Manatal careers page show automatically under "Roles we're recruiting for" on the Candidates page (pinned jobs first). Each has a **View & Apply** button that opens the job on the client's careers page (https://sd-recruitment.careers-page.com) in a new tab. The list refreshes every 15 minutes (`MANATAL_CACHE_MINUTES`); if careers-page.com is unreachable, the last list is shown. Set the careers page with `MANATAL_CAREERS_PAGE_URL` (default `https://sd-recruitment.careers-page.com`). Code: `core/careers_feed.py`.
-- **Current opportunities:** add, edit or hide the jobs shown on the Candidates page. Each job gets
-  an *Apply* button that opens the form linked to that job.
 - **Airtable status** on each vacancy and candidate (Sent, Failed or Not set up), with a *send again* action.
 - **Reports:** CSV (every field, opens in Excel) or PDF (main fields, ready to print or share) for administrators, for any date range.
-- **Roles:** *Administrators* have full access. *Staff* (the "Staff" group) can work on records and
-  manage jobs, but can't delete records, export reports or manage users.
+- **Roles:** *Administrators* have full access. *Staff* (the "Staff" group) can work on records,
+  but can't delete records, export reports or manage users.
 - Email notifications for each new submission. CVs are never emailed.
 
 ### Privacy of CVs

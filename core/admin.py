@@ -3,7 +3,6 @@
 What the visitor submitted is read-only for everyone, so the record always shows exactly what was sent.
 The team only works with: status, assigned to and internal notes. Enquiries arrive from the website
 forms only (no "Add" button), and only administrators can delete them.
-Current opportunities (jobs shown on the Candidates page) are added and edited here by staff.
 """
 
 from django.contrib import admin, messages
@@ -12,7 +11,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from . import airtable
-from .models import AIRTABLE_FAILED, AIRTABLE_SENT, CandidateRegistration, ContactEnquiry, Job, VacancyEnquiry
+from .models import AIRTABLE_FAILED, AIRTABLE_SENT, CandidateRegistration, ContactEnquiry, VacancyEnquiry
 
 
 def person(user):
@@ -195,18 +194,18 @@ class CandidateRegistrationAdmin(AirtableAdminMixin, EnquiryAdmin):
     list_display = ("full_name", "industry", "location", "support_summary", "cv", "status", "handler",
                     "airtable_badge", "received")
     list_filter = ("status", AssignedFilter, "industry", "visa_type", "experience", "support_jobs",
-                   "support_resume", "resume_package", "support_interview", "support_career", "job",
+                   "support_resume", "resume_package", "support_interview", "support_career",
                    "airtable_status", "created_at")
     search_fields = ("full_name", "email", "phone", "location", "preferred_location", "position_sought", "notes")
-    list_select_related = ("assigned_to", "job")
+    list_select_related = ("assigned_to",)
     submitted_fields = ("full_name", "phone_link", "email_link", "location", "visa_type", "preferred_location",
-                        "industry", "position_sought", "employment_type_display", "experience", "job",
+                        "industry", "position_sought", "employment_type_display", "experience",
                         "support_summary", "package_display", "preferred_times", "resume_link", "consent",
                         "received_full")
     fieldsets = (
         ("Candidate details", {"fields": ("full_name", ("phone_link", "email_link"), ("location", "visa_type"),
                                           ("preferred_location", "industry"), "position_sought",
-                                          ("employment_type_display", "experience"), "job", "support_summary",
+                                          ("employment_type_display", "experience"), "support_summary",
                                           ("package_display", "preferred_times"),
                                           "resume_link", ("consent", "received_full"))}),
         FOLLOW_UP,
@@ -251,20 +250,3 @@ class ContactEnquiryAdmin(EnquiryAdmin):
     @admin.display(description="Message")
     def message_preview(self, obj):
         return (obj.message[:80] + "…") if len(obj.message) > 80 else obj.message
-
-
-@admin.register(Job)
-class JobAdmin(admin.ModelAdmin):
-    list_display = ("title", "industry", "location", "employment_type", "is_published", "applicants", "created_at")
-    list_editable = ("is_published",)
-    list_filter = ("is_published", "industry", "employment_type")
-    search_fields = ("title", "location", "summary")
-    fields = ("title", ("industry", "employment_type"), "location", "summary", "is_published")
-
-    @admin.display(description="Registrations")
-    def applicants(self, obj):
-        n = obj.registrations.count()
-        if not n:
-            return 0
-        url = reverse("admin:core_candidateregistration_changelist") + f"?job__id__exact={obj.pk}"
-        return format_html('<a href="{}">{}</a>', url, n)
