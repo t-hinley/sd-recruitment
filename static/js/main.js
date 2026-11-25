@@ -111,8 +111,7 @@
           opt.addEventListener("click", function () {
             input.checked = true;
             input.dispatchEvent(new Event("change", { bubbles: true }));
-            if (menu.querySelector(".ms__option")) { menu.hidden = false; menu.querySelector(".ms__option").focus(); }
-            else close(true);
+            close(true);  // one pick per click; "+ Add" reopens the list with the remaining options
           });
           menu.appendChild(opt);
         }
