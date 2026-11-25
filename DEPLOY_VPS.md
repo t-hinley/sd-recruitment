@@ -254,5 +254,6 @@ app. Take a snapshot first for bigger updates.
 | Pages without styling | `cd /srv/sdrecruitment && .venv/bin/python manage.py collectstatic --noinput` |
 | **413 Request Entity Too Large** on the candidate form | The CV is bigger than Nginx allows: check `client_max_body_size` in the Nginx file. |
 | Certbot fails | DNS must point to this server and port 80 must be open (`sudo ufw status`). |
+| "Forgot your password?" email never arrives | The account must have that email address (Users → the user → Email address). Test sending with `cd /srv/sdrecruitment && .venv/bin/python manage.py sendtestemail you@example.com`, and check `sudo journalctl -u sdrecruitment -n 50 --no-pager` for "Failed to send password reset email". Check the spam folder. |
 | No emails | Check `EMAIL_` settings; GoDaddy may block port 25, so use 587 (or 465 with `EMAIL_USE_SSL=True`, `EMAIL_USE_TLS=False`). |
 | Undo everything | `sudo rm /etc/nginx/sites-enabled/sdrecruitment && sudo systemctl reload nginx && sudo systemctl disable --now sdrecruitment` – or restore the snapshot. |

@@ -165,7 +165,12 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
-    "loggers": {"core": {"handlers": ["console"], "level": "INFO"}},
+    "loggers": {
+        "core": {"handlers": ["console"], "level": "INFO"},
+        # "Forgot your password?" emails: if sending fails, the page still says "sent" (by design, so it
+        # never reveals which emails have accounts). Log the failure so it shows in the server log.
+        "django.contrib.auth": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+    },
 }
 
 # Optional links shown on the site when set.
