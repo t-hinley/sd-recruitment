@@ -63,7 +63,7 @@
       <h2>Roles we're recruiting for</h2>
     </div>
     {% if external_jobs %}
-    <ul class="jobs jobs--grid{% if external_jobs|length < 3 %} jobs--few{% endif %}" id="job-list" data-job-list>
+    <ul class="jobs jobs--grid" id="job-list" data-job-list>
       {% for job in external_jobs %}
       <li class="job job--compact">
         <h3 class="job__title">{{ job.title }}</h3>
