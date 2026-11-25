@@ -9,7 +9,10 @@
       <p class="hero__lead">SD Recruitment connects businesses with the right people and supports candidates in finding opportunities to grow their careers.</p>
     </div>
     <div class="hero__media" aria-hidden="true">
-      <img src="{% static 'images/hero.jpg' %}" alt="" width="619" height="602" fetchpriority="high">
+      <picture>
+        <source media="(min-width: 981px)" srcset="{% static 'images/hero-wide.jpg' %}" width="1132" height="602">
+        <img src="{% static 'images/hero.jpg' %}" alt="" width="619" height="602" fetchpriority="high">
+      </picture>
     </div>
   </div>
 </section>
