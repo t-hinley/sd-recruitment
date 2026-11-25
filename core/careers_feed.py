@@ -122,6 +122,7 @@ def _feed_details(acct):
                     "summary": _text(raw.get("description", ""), limit=220),
                     "location": _plain(raw.get("location_display", "")),
                     "pinned": bool(raw.get("is_pinned_in_career_page")),
+                    "posted": raw.get("id") if isinstance(raw.get("id"), int) else 0,  # higher = posted later
                 })
             nxt = data.get("next") or ""
             url = nxt if nxt.startswith(f"{FEED_BASE}/api/v1.0/c/") else ""
@@ -145,9 +146,12 @@ def _fetch(page_url, acct):
             "location": location or d.get("location", ""),
             "summary": d.get("summary", ""),
             "pinned": d.get("pinned", False),
+            "posted": d.get("posted", 0),
             "url": f"{page_url}/jobs/{job_id.lower()}",
         })
-    jobs.sort(key=lambda j: not j["pinned"])  # pinned first, otherwise the careers page order
+    # Pinned first, then most recently posted (Python's sort is stable, so jobs with no feed details
+    # keep the careers page order after the others).
+    jobs.sort(key=lambda j: (not j["pinned"], -j["posted"]))
     return jobs
 
 

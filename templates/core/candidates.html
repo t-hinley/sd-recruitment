@@ -63,7 +63,7 @@
       <h2>Roles we're recruiting for</h2>
     </div>
     {% if external_jobs %}
-    <ul class="jobs jobs--tiles">
+    <ul class="jobs jobs--grid{% if external_jobs|length < 3 %} jobs--few{% endif %}" id="job-list" data-job-list>
       {% for job in external_jobs %}
       <li class="job job--compact">
         <h3 class="job__title">{{ job.title }}</h3>
@@ -71,6 +71,7 @@
       </li>
       {% endfor %}
     </ul>
+    <p class="jobs-more" hidden><button type="button" class="btn btn--ghost" aria-controls="job-list" aria-expanded="false" data-jobs-toggle></button></p>
     {% if careers_page_url %}<p class="center-link"><a class="link-arrow" href="{{ careers_page_url }}" target="_blank" rel="noopener noreferrer">See all roles on our careers page <svg class="icon"><use href="#i-external"/></svg></a></p>{% endif %}
     {% else %}
     <div class="empty-state">

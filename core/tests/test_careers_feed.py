@@ -111,6 +111,37 @@ class CareersFeedTests(TestCase):
             self.assertEqual(len(careers_feed.jobs()), 2)
 
 
+@override_settings(MANATAL_CAREERS_PAGE_URL=PAGE, STORAGES=STATIC)
+class JobOrderAndViewMoreTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        ids = ["%08d-0000-0000-0000-000000000000" % i for i in range(1, 9)]
+        page = "<html>" + "".join(card(i, f"Role {n}") for n, i in enumerate(ids, 1)) + "</html>"
+        feed = {"results": [{"id": 100 + n, "position_name": f"Role {n}", "description": "",
+                             "is_pinned_in_career_page": n == 2} for n in range(1, 9)]}
+
+        def fake(req, timeout=None, context=None):
+            if req.full_url.startswith("https://www.careers-page.com/api/"):
+                return FakeResponse(json.dumps(feed))
+            return FakeResponse(page if req.full_url.endswith("?page=1") else "<html></html>")
+
+        p = mock.patch("urllib.request.urlopen", side_effect=fake)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_pinned_then_most_recent_first(self):
+        titles = [j["title"] for j in careers_feed.jobs()]
+        self.assertEqual(titles[:3], ["Role 2", "Role 8", "Role 7"])
+        self.assertEqual(titles[-1], "Role 1")
+
+    def test_page_has_view_more_control_and_all_jobs(self):
+        r = self.client.get(reverse("core:candidates"))
+        self.assertContains(r, 'data-job-list', count=1)
+        self.assertContains(r, 'aria-controls="job-list"')
+        self.assertContains(r, 'class="job job--compact"', count=8)  # all in the page; extra ones hidden by script
+        self.assertNotContains(r, "jobs--few")
+
+
 class CareersPageSettingTests(TestCase):
     def test_only_careers_page_addresses_accepted(self):
         for value, expected in (

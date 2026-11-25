@@ -169,6 +169,38 @@
     syncExtras();
   }
 
+  // Current opportunities: show the most recent two rows, with "View more roles" for the rest.
+  // Without JavaScript every job shows.
+  var jobList = document.querySelector("[data-job-list]");
+  var jobsToggle = document.querySelector("[data-jobs-toggle]");
+  if (jobList && jobsToggle) {
+    var jobs = jobList.querySelectorAll(".job");
+    var visibleCount = function () {
+      return window.matchMedia("(max-width: 640px)").matches ? 3 : window.matchMedia("(max-width: 980px)").matches ? 4 : 6;
+    };
+    var expanded = false;
+    var renderJobs = function () {
+      var extra = jobs.length - visibleCount();
+      jobsToggle.parentNode.hidden = extra <= 0;
+      jobList.classList.toggle("is-collapsed", !expanded && extra > 0);
+      jobsToggle.setAttribute("aria-expanded", String(expanded));
+      jobsToggle.textContent = expanded ? "Show fewer roles" : "View more roles (" + extra + ")";
+    };
+    jobsToggle.addEventListener("click", function () {
+      expanded = !expanded;
+      renderJobs();
+      if (expanded) {
+        var first = jobs[visibleCount()];
+        var link = first && first.querySelector("a");
+        if (link) link.focus({ preventScroll: true });
+      } else {
+        jobList.scrollIntoView({ block: "nearest" });
+      }
+    });
+    window.addEventListener("resize", renderJobs);
+    renderJobs();
+  }
+
   // Resume upload: show the chosen file name, and allow dropping a file.
   document.querySelectorAll(".upload").forEach(function (zone) {
     var input = zone.querySelector("input[type=file]");
