@@ -383,3 +383,25 @@ form .aligned .sd-cards label.sd-card, .sd-cards label.sd-card {
 .fb-dd, .fb-dd select { min-width: 0; }
 @media (max-width: 767px) { .fb-dd select { field-sizing: fixed; width: 100% !important; } .fb-panel { left: 16px; } }
 .fb-panel { left: auto; right: 0; } @media (max-width: 767px) { .fb-panel { left: 16px; right: 16px; } }
+
+/* ---- Settings lists: users, account history, authenticator apps ---------- */
+.fb-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.fb-add { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 9px; background: #ED5A2A;
+  color: #fff !important; font-weight: 700; font-size: 14px; text-decoration: none !important; white-space: nowrap; }
+.fb-add:hover { background: #C84414; }
+.fb-add span { font-size: 18px; line-height: 1; }
+.sd-person { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
+.sd-person > i { width: 34px; height: 34px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: linear-gradient(135deg, #304B98, #1B2A5C); color: #fff; font: 700 13px/1 inherit; font-style: normal; }
+.sd-person b { display: block; color: #304B98; font-size: 14px; }
+.sd-person small { display: block; color: #6B7690; font-size: 12px; font-weight: 400; }
+a .sd-person b { text-decoration: none; }
+.sd-acct--admin { background: #E6ECFA; color: #304B98; }
+.sd-acct--plain { background: #EEF1F7; color: #55627D; }
+.sd-acct--wait { background: #FFF4E0; color: #9A5B00; }
+#result_list td, #result_list th { vertical-align: middle; }
+@media (max-width: 767px) {
+  #result_list tr > .column-account_badge, #result_list tr > .field-account_badge,
+  #result_list tr > .column-action_badge, #result_list tr > .field-action_badge,
+  #result_list tr > .column-set_up_badge, #result_list tr > .field-set_up_badge { display: table-cell !important; }
+}

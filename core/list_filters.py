@@ -38,10 +38,15 @@ def _params(request):
     return {k: v for k, v in request.GET.items() if k not in IGNORED}
 
 
-def _tab_queryset(qs, params, user):
+def _tab_queryset(request, model_admin, qs, params):
+    """Apply a tab's parameters: through the matching custom filter if there is one, else as a lookup."""
+    from django.contrib import admin
+    simple = {f.parameter_name: f for f in model_admin.list_filter
+              if isinstance(f, type) and issubclass(f, admin.SimpleListFilter)}
     for k, v in params.items():
-        if k == "assigned":
-            qs = qs.filter(assigned_to=user) if v == "me" else qs.filter(assigned_to__isnull=True)
+        if k in simple:
+            spec = simple[k](request, {k: [v]}, model_admin.model, model_admin)
+            qs = spec.queryset(request, qs)
         else:
             qs = qs.filter(**{k: v})
     return qs
@@ -61,7 +66,7 @@ def build(request, model_admin, cl):
         if on:
             active_tab = params
         tabs.append({"label": label, "url": "?" + urlencode(params), "on": on, "tone": tone,
-                     "count": _tab_queryset(base, params, request.user).count()})
+                     "count": _tab_queryset(request, model_admin, base, params).count()})
 
     # Chips for everything switched on, except what the selected tab already says.
     chips = []
@@ -78,5 +83,8 @@ def build(request, model_admin, cl):
         "fb_more_active": sum(1 for f in more if f["active"]),
         "fb_chips": chips, "fb_clear_url": "?",
         "fb_hidden": [(k, v) for k, v in request.GET.items() if k not in ("q", "p")],
-        "fb_list_title": model_admin.list_title, "fb_list_subtitle": model_admin.list_subtitle,
+        "fb_list_title": model_admin.list_title or capfirst(str(model_admin.model._meta.verbose_name_plural)),
+        "fb_list_subtitle": model_admin.list_subtitle,
+        "fb_search_placeholder": model_admin.search_placeholder, "fb_has_search": bool(model_admin.search_fields),
+        "fb_add_label": model_admin.add_label if model_admin.has_add_permission(request) else "",
     }

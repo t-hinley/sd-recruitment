@@ -167,3 +167,33 @@ class TeamMemberFormTests(TestCase):
         self.client.post(reverse("admin:auth_user_change", args=[self.boss.pk]), own)
         self.boss.refresh_from_db()
         self.assertTrue(self.boss.is_superuser)
+
+
+@override_settings(STORAGES=STATIC, ADMIN_TWO_FACTOR=False)
+class SettingsListTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.boss = User.objects.create_superuser("boss", "boss@example.com", PW)
+        self.sam = User.objects.create_user("sam", "sam@example.com", PW, is_staff=True)
+        self.client.force_login(self.boss)
+
+    def test_users_list_tabs_and_filters(self):
+        from core import accounts
+        accounts.set_status(self.boss, self.sam, True, "Left")
+        url = reverse("admin:auth_user_changelist")
+        r = self.client.get(url)
+        self.assertContains(r, "Suspended <b>1</b>", html=False)
+        self.assertContains(r, "Administrators <b>1</b>", html=False)
+        self.assertContains(r, "+</span> Add user", html=False)
+        r = self.client.get(url + "?account=suspended")
+        self.assertContains(r, "<small>sam</small>", html=False)
+        self.assertContains(r, "Showing 1 of 2")
+
+    def test_history_and_authenticator_lists(self):
+        from core import accounts
+        accounts.set_status(self.boss, self.sam, True, "Left")
+        r = self.client.get(reverse("admin:core_accountstatuschange_changelist") + "?action__exact=suspended")
+        self.assertContains(r, "Left")
+        self.assertContains(r, 'class="fb-tab is-on')
+        r = self.client.get(reverse("admin:core_authenticatordevice_changelist"))
+        self.assertContains(r, "Not finished")

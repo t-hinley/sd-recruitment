@@ -260,7 +260,7 @@ class AccountStatusChange(models.Model):
     class Meta:
         ordering = ["-changed_at", "-id"]
         verbose_name = "account history entry"
-        verbose_name_plural = "account history"
+        verbose_name_plural = "account history entries"
 
     def __str__(self):
         return f"{self.username} – {self.get_action_display()} {self.changed_at:%d/%m/%Y}"

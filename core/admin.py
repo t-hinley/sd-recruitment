@@ -82,9 +82,40 @@ class HasCVFilter(admin.SimpleListFilter):
         return queryset
 
 
-class EnquiryAdmin(admin.ModelAdmin):
-    change_form_template = "admin/enquiry_change_form.html"
+def person_cell(user, sub=""):
+    """Name with initials avatar, for the user, history and authenticator lists."""
+    if not user:
+        return "-"
+    name = user.get_full_name() or user.get_username()
+    initials = "".join(w[0] for w in name.split()[:2]).upper()
+    return format_html('<span class="sd-person"><i aria-hidden="true">{}</i><span><b>{}</b><small>{}</small></span></span>',
+                       initials, name, sub or user.get_username())
+
+
+class FilterBarMixin:
+    """Quick tabs + filter bar above the list instead of Django's right-hand filter column
+    (core/list_filters.py, templates/admin/enquiry_change_list.html)."""
     change_list_template = "admin/enquiry_change_list.html"
+    primary_filters = ()
+    filter_titles = {}
+    list_tabs = (("All", {}, ""),)
+    list_title = ""
+    list_subtitle = ""
+    search_placeholder = "Search…"
+    add_label = ""
+
+    def changelist_view(self, request, extra_context=None):
+        from . import list_filters
+        response = super().changelist_view(request, extra_context)
+        cl = response.context_data.get("cl") if hasattr(response, "context_data") else None
+        if cl is not None:
+            response.context_data.update(list_filters.build(request, self, cl))
+        return response
+
+
+class EnquiryAdmin(FilterBarMixin, admin.ModelAdmin):
+    change_form_template = "admin/enquiry_change_form.html"
+    search_placeholder = "Search name, email, phone, position…"
     primary_filters = ("status", "assigned", "industry")  # shown in the bar; the rest under "More filters"
     filter_titles = {"created_at": "Received", "airtable_status": "Airtable", "assigned": "Assigned to",
                      "industry": "Industry", "experience": "Experience", "positions_count": "Positions"}
@@ -147,14 +178,6 @@ class EnquiryAdmin(admin.ModelAdmin):
     @admin.display(description="Received")
     def received_full(self, obj):
         return timezone.localtime(obj.created_at).strftime("%d %b %Y, %I:%M %p")
-
-    def changelist_view(self, request, extra_context=None):
-        from . import list_filters
-        response = super().changelist_view(request, extra_context)
-        cl = getattr(response, "context_data", {}).get("cl") if hasattr(response, "context_data") else None
-        if cl is not None:
-            response.context_data.update(list_filters.build(request, self, cl))
-        return response
 
     # ---- record page ---------------------------------------------------------------
     kind = "Enquiry"
@@ -365,18 +388,46 @@ class ContactEnquiryAdmin(EnquiryAdmin):
 
 
 @admin.register(AuthenticatorDevice)
-class AuthenticatorDeviceAdmin(admin.ModelAdmin):
+class AuthenticatorDeviceAdmin(FilterBarMixin, admin.ModelAdmin):
     """Administrators only. Delete a user's authenticator app (e.g. lost phone) and they set it up again at
     their next sign-in. The secret is never shown."""
-    list_display = ("user", "confirmed", "confirmed_at", "backup_left", "created_at")
+    list_display = ("user_cell", "set_up_badge", "set_up_on", "backup_left")
+    list_display_links = ("user_cell",)
     list_filter = ("confirmed",)
+    list_select_related = ("user",)
     search_fields = ("user__username", "user__email", "user__first_name", "user__last_name")
     fields = ("user", "confirmed", "confirmed_at", "created_at")
     readonly_fields = fields
+    primary_filters = ("confirmed",)
+    filter_titles = {"confirmed": "Status"}
+    list_tabs = (("All", {}, ""), ("Set up", {"confirmed__exact": "1"}, ""),
+                 ("Not finished", {"confirmed__exact": "0"}, "warn"))
+    list_title = "Authenticator apps"
+    list_subtitle = ("Phones set up for two-step login. Delete one to make that person set it up again at their "
+                     "next sign-in (for example after losing their phone).")
+    search_placeholder = "Search name, username or email…"
 
-    @admin.display(description="Backup codes left")
+    @admin.display(description="Person", ordering="user__first_name")
+    def user_cell(self, obj):
+        return person_cell(obj.user, obj.user.email)
+
+    @admin.display(description="Status", ordering="confirmed")
+    def set_up_badge(self, obj):
+        if obj.confirmed:
+            return format_html('<span class="sd-acct sd-acct--on">Set up</span>')
+        return format_html('<span class="sd-acct sd-acct--wait">Not finished</span>')
+
+    @admin.display(description="Set up on", ordering="confirmed_at")
+    def set_up_on(self, obj):
+        return timezone.localtime(obj.confirmed_at).strftime("%d %b %Y") if obj.confirmed_at else "-"
+
+    @admin.display(description="Backup codes")
     def backup_left(self, obj):
-        return obj.backup_codes.filter(used_at__isnull=True).count()
+        if not obj.confirmed:
+            return "-"
+        left = obj.backup_codes.filter(used_at__isnull=True).count()
+        tone = "off" if left == 0 else ("wait" if left <= 3 else "plain")
+        return format_html('<span class="sd-acct sd-acct--{}">{} of 10 left</span>', tone, left)
 
     def has_module_permission(self, request):
         return request.user.is_superuser
@@ -424,6 +475,36 @@ class AccountStatusFilter(admin.SimpleListFilter):
         return queryset
 
 
+class RoleFilter(admin.SimpleListFilter):
+    title = "role"
+    parameter_name = "role"
+
+    def lookups(self, request, model_admin):
+        return [("admin", "Administrator"), ("staff", "Staff")]
+
+    def queryset(self, request, queryset):
+        if self.value() == "admin":
+            return queryset.filter(is_superuser=True)
+        if self.value() == "staff":
+            return queryset.filter(is_superuser=False, is_staff=True)
+        return queryset
+
+
+class TwoStepFilter(admin.SimpleListFilter):
+    title = "two-step login"
+    parameter_name = "twostep"
+
+    def lookups(self, request, model_admin):
+        return [("on", "Set up"), ("off", "Not set up")]
+
+    def queryset(self, request, queryset):
+        if self.value() == "on":
+            return queryset.filter(authenticator__confirmed=True)
+        if self.value() == "off":
+            return queryset.exclude(authenticator__confirmed=True)
+        return queryset
+
+
 class AccountHistoryInline(admin.TabularInline):
     model = AccountStatusChange
     fk_name = "user"
@@ -454,11 +535,43 @@ if admin.site.is_registered(Group):
 
 
 @admin.register(User)
-class UserAdmin(BaseUserAdmin):
+class UserAdmin(FilterBarMixin, BaseUserAdmin):
     """Accounts are suspended, never deleted, so the record of who did what stays for audits.
     'Active' can only be changed with the Suspend / Reactivate buttons, which ask for a reason."""
-    list_display = ("username", "full_name", "email", "account_badge", "role", "last_login")
-    list_filter = (AccountStatusFilter, "is_superuser")
+    list_display = ("user_cell", "email", "role_badge", "account_badge", "two_step_cell", "last_seen")
+    list_display_links = ("user_cell",)
+    list_filter = (AccountStatusFilter, RoleFilter, TwoStepFilter)
+    list_select_related = ("authenticator",)
+    primary_filters = ("account", "role", "twostep")
+    filter_titles = {"account": "Account", "role": "Role", "twostep": "Two-step"}
+    list_tabs = (("All", {}, ""), ("Active", {"account": "active"}, ""), ("Suspended", {"account": "suspended"}, "warn"),
+                 ("Administrators", {"role": "admin"}, ""), ("Staff", {"role": "staff"}, ""))
+    list_title = "Users"
+    list_subtitle = "Everyone who can sign in to this admin"
+    search_placeholder = "Search name, username or email…"
+    add_label = "Add user"
+
+    @admin.display(description="Name", ordering="first_name")
+    def user_cell(self, obj):
+        return person_cell(obj)
+
+    @admin.display(description="Role", ordering="is_superuser")
+    def role_badge(self, obj):
+        if obj.is_superuser:
+            return format_html('<span class="sd-acct sd-acct--admin">Administrator</span>')
+        return format_html('<span class="sd-acct sd-acct--plain">{}</span>', "Staff" if obj.is_staff else "No access")
+
+    @admin.display(description="Two-step")
+    def two_step_cell(self, obj):
+        device = getattr(obj, "authenticator", None)
+        if device and device.confirmed:
+            return format_html('<span class="sd-acct sd-acct--on">Set up</span>')
+        return format_html('<span class="sdmuted">Not set up</span>')
+
+    @admin.display(description="Last signed in", ordering="last_login")
+    def last_seen(self, obj):
+        return timezone.localtime(obj.last_login).strftime("%d %b %Y") if obj.last_login else format_html(
+            '<span class="sdmuted">Never</span>')
     inlines = [AccountHistoryInline]
     actions = ["suspend_selected", "reactivate_selected"]
     change_form_template = "admin/user_change_form.html"
@@ -616,12 +729,36 @@ class UserAdmin(BaseUserAdmin):
 
 
 @admin.register(AccountStatusChange)
-class AccountStatusChangeAdmin(admin.ModelAdmin):
+class AccountStatusChangeAdmin(FilterBarMixin, admin.ModelAdmin):
     """Read-only audit list of every suspension and reactivation. Nobody can edit or delete it."""
-    list_display = ("changed_at", "username", "full_name", "action", "reason_short", "by")
+    list_display = ("when", "person", "action_badge", "reason_short", "by")
+    list_display_links = ("when",)
     list_filter = ("action", "changed_at")
+    list_select_related = ("changed_by",)
+    primary_filters = ("action", "changed_at")
+    filter_titles = {"action": "Action", "changed_at": "Date"}
+    list_tabs = (("All", {}, ""), ("Suspended", {"action__exact": "suspended"}, "warn"),
+                 ("Reactivated", {"action__exact": "reactivated"}, ""))
+    list_title = "Account history"
+    list_subtitle = "Every account suspension and reactivation, with who did it and why. Kept permanently."
+    search_placeholder = "Search name, username, email or reason…"
+
+    @admin.display(description="Date", ordering="changed_at")
+    def when(self, obj):
+        return timezone.localtime(obj.changed_at).strftime("%d %b %Y, %I:%M %p")
+
+    @admin.display(description="Account", ordering="username")
+    def person(self, obj):
+        name = obj.full_name or obj.username
+        initials = "".join(w[0] for w in name.split()[:2]).upper()
+        return format_html('<span class="sd-person"><i aria-hidden="true">{}</i><span><b>{}</b><small>{}</small></span>'
+                           '</span>', initials, name, obj.email or obj.username)
+
+    @admin.display(description="Action", ordering="action")
+    def action_badge(self, obj):
+        tone = "off" if obj.action == AccountStatusChange.SUSPENDED else "on"
+        return format_html('<span class="sd-acct sd-acct--{}">{}</span>', tone, obj.get_action_display())
     search_fields = ("username", "full_name", "email", "reason")
-    date_hierarchy = "changed_at"
     fields = ("changed_at", "action", "username", "full_name", "email", "reason", "by")
     readonly_fields = fields
 

@@ -52,7 +52,7 @@ class SDAdminSite(admin.AdminSite):
 
     MAIN = ["candidateregistration", "vacancyenquiry", "contactenquiry"]
     SHORT = {"candidateregistration": "Candidates", "vacancyenquiry": "Vacancies",
-             "contactenquiry": "General"}  # fit the sidebar
+             "contactenquiry": "General", "accountstatuschange": "Account history"}  # fit the sidebar
     SETTINGS = ["user", "accountstatuschange"]
 
     # ---- pages -------------------------------------------------------------
@@ -201,7 +201,7 @@ class SDAdminSite(admin.AdminSite):
         for k in self.SETTINGS:
             m = found.get(k)
             if m and m.get("admin_url"):
-                rest.append(item(k, m["name"], m["admin_url"], k))
+                rest.append(item(k, self.SHORT.get(k, m["name"]), m["admin_url"], k))
         known = set(self.MAIN) | set(self.SETTINGS)
         for k, m in found.items():
             if k not in known and m.get("admin_url"):
