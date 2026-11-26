@@ -605,9 +605,8 @@ class UserAdmin(FilterBarMixin, BaseUserAdmin):
             email_btn = format_html('<span class="sdmuted">Add an email address to send a reset link</span>')
         return format_html(
             '<div class="sd-pw"><span class="sd-acct sd-acct--plain">{}</span>'
-            '<div class="sd-pw__btns"><a class="rec-btn" href="{}">Set a new password</a>{}</div>'
-            '<small>Passwords are stored scrambled, so nobody (including administrators) can see them. '
-            'A reset link lets the person choose their own.</small></div>', state, change_url, email_btn)
+            '<div class="sd-pw__btns"><a class="rec-btn" href="{}">Set a new password</a>{}</div></div>',
+            state, change_url, email_btn)
 
     @admin.display(description="Name", ordering="first_name")
     def full_name(self, obj):
