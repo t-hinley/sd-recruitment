@@ -141,7 +141,6 @@ def send_candidate_confirmation(reg, request=None):
     contact = " | ".join(x for x in (BUSINESS.get("phone_display"), BUSINESS.get("email")) if x)
     if contact:
         lines.append(contact)
-    lines += ["", "You received this email because this address was entered on our website's candidate form."]
 
     reply_to = [BUSINESS["email"]] if BUSINESS.get("email") else list(settings.ENQUIRY_NOTIFICATION_EMAILS[:1])
     try:
