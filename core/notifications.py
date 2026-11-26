@@ -1,10 +1,12 @@
 import logging
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import EmailMessage
 from django.urls import reverse
 from django.utils import timezone
 
+from .content import BUSINESS
 from .models import CandidateRegistration, ContactEnquiry, VacancyEnquiry
 
 logger = logging.getLogger(__name__)
@@ -69,4 +71,90 @@ def send_enquiry_notification(obj, request=None):
         return True
     except Exception:  # pragma: no cover - depends on mail server
         logger.exception("Failed to send notification for %s", obj)
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Copy of the registration for the candidate
+# ---------------------------------------------------------------------------
+# The copy goes to whatever address was typed into the form, so it's limited to stop the form being
+# used to send email to strangers. Registrations are always saved; only the copy is skipped.
+CONFIRM_LIMIT_PER_IP_PER_HOUR = 5
+CONFIRM_LIMIT_PER_ADDRESS_PER_DAY = 3
+
+
+def _allowed(key, limit, seconds):
+    cache.add(key, 0, seconds)
+    try:
+        count = cache.incr(key)
+    except ValueError:
+        cache.set(key, 1, seconds)
+        count = 1
+    return count <= limit
+
+
+def send_candidate_confirmation(reg, request=None):
+    """Email the candidate a copy of their registration. Never raises."""
+    if not getattr(settings, "CANDIDATE_CONFIRMATION_EMAILS", True) or not reg.email:
+        return False
+    from .security import client_ip
+    ip = client_ip(request) if request is not None else "unknown"
+    if not (_allowed(f"confirm-ip:{ip}", CONFIRM_LIMIT_PER_IP_PER_HOUR, 3600)
+            and _allowed(f"confirm-to:{reg.email.lower()}", CONFIRM_LIMIT_PER_ADDRESS_PER_DAY, 86400)):
+        logger.warning("Candidate confirmation not sent to %s: sending limit reached", reg.email)
+        return False
+
+    first = reg.full_name.split()[0] if reg.full_name.split() else reg.full_name
+    rows = [
+        ("Full name", reg.full_name),
+        ("Phone number", reg.phone),
+        ("Email address", reg.email),
+        ("Country / location", reg.location),
+        ("Visa type", reg.visa_type),
+        ("Preferred job location", reg.preferred_location),
+        ("Industry / job category", reg.industry),
+        ("Position(s) interested in", reg.position_sought),
+        ("Employment type", reg.employment_type_display),
+        ("Relevant work experience", reg.experience),
+        ("What we can help with", ", ".join(reg.support_list)),
+        ("Resume package", reg.package_summary),
+        ("Preferred days and times", reg.preferred_times),
+        ("Resume / CV", reg.resume_name if reg.resume else "Not provided"),
+    ]
+    lines = [
+        f"Hi {first},",
+        "",
+        f"Thank you for registering your interest with {BUSINESS['name']}. Here is a copy of the details you sent us.",
+        "",
+    ]
+    lines += [f"{label}: {value}" for label, value in rows if value]
+    lines += [
+        f"Received: {timezone.localtime(reg.created_at):%d %b %Y %I:%M %p}",
+        "",
+        "What happens next",
+        "Our team will review your details and contact you to discuss your goals and any suitable opportunities"
+        " or services. Registering does not guarantee an interview, job offer or placement.",
+        "",
+        "If anything above needs correcting, just reply to this email.",
+        "",
+        "Kind regards,",
+        BUSINESS["name"],
+    ]
+    contact = " | ".join(x for x in (BUSINESS.get("phone_display"), BUSINESS.get("email")) if x)
+    if contact:
+        lines.append(contact)
+    lines += ["", "You received this email because this address was entered on our website's candidate form."]
+
+    reply_to = [BUSINESS["email"]] if BUSINESS.get("email") else list(settings.ENQUIRY_NOTIFICATION_EMAILS[:1])
+    try:
+        EmailMessage(
+            subject=f"We've received your registration – {BUSINESS['name']}",
+            body="\n".join(lines),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[reg.email],
+            reply_to=reply_to or None,
+        ).send()
+        return True
+    except Exception:  # pragma: no cover - depends on mail server
+        logger.exception("Failed to send candidate confirmation to %s", reg.email)
         return False

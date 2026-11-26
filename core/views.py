@@ -12,7 +12,7 @@ from django.views.decorators.http import require_GET, require_POST
 from . import airtable, careers_feed, content
 from .forms import CandidateForm, ContactForm, VacancyForm
 from .models import RESUME_PACKAGES, CandidateRegistration
-from .notifications import send_enquiry_notification
+from .notifications import send_candidate_confirmation, send_enquiry_notification
 
 SERVICE_KEYS = {key for key, _label in CandidateRegistration.SUPPORT_CHOICES}
 # Employers page industry cards -> Airtable "Industry / Sector" option.
@@ -80,8 +80,9 @@ def candidates(request):
             registration = form.save()
             airtable.push(registration)
             send_enquiry_notification(registration, request)
-            messages.success(request, "Thank you for registering your interest. "
-                                      "We've received your details and will be in touch.")
+            send_candidate_confirmation(registration, request)
+            messages.success(request, "Thank you for registering your interest. We've received your details "
+                                      "and emailed you a copy. We'll be in touch.")
             return redirect(reverse("core:candidates") + "?sent=1#register")
 
     return render(request, "core/candidates.html", {

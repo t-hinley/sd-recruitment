@@ -76,6 +76,7 @@ The admin has the same design as the other SD admins. It includes:
 - **Roles:** *Administrators* have full access. *Staff* (the "Staff" group) can work on records,
   but can't delete records, export reports or manage users.
 - Email notifications for each new submission. CVs are never emailed.
+- **Candidate copy:** candidates are emailed a copy of their registration (reply-to is the business email). Limited to 5 per hour per connection and 3 per day per address so the form can't be used to email strangers; switch off with `CANDIDATE_CONFIRMATION_EMAILS=False`.
 
 ### Privacy of CVs
 CVs are stored in `private_media/resumes/` under random file names. The web server does not serve

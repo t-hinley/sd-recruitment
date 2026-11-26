@@ -142,6 +142,8 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "SD Recruitment Websit
 # Inbox(es) that receive website enquiries, comma separated. Empty = no notification emails are sent
 # (enquiries are still saved and shown in the admin).
 ENQUIRY_NOTIFICATION_EMAILS = env_list("ENQUIRY_NOTIFICATION_EMAILS")
+# Email candidates a copy of their registration (Candidates page form). False = off.
+CANDIDATE_CONFIRMATION_EMAILS = env_bool("CANDIDATE_CONFIRMATION_EMAILS", True)
 
 # ---------------------------------------------------------------------------
 # Admin sign-in and sessions (same rules as the SD Education admin)

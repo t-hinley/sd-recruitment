@@ -59,6 +59,10 @@ def candidate_data(**extra):
     },
 )
 class SiteTests(TestCase):
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()  # reset the candidate-copy sending limits between tests
+
     def test_pages_render_with_recommended_wording(self):
         for name, text in [
             ("core:home", "Connecting Business."),
@@ -237,7 +241,7 @@ class SiteTests(TestCase):
     def test_no_inbox_configured_still_saves(self):
         self.client.post(reverse("core:candidates"), candidate_data())
         self.assertTrue(CandidateRegistration.objects.exists())
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual([m.to for m in mail.outbox], [["jane@example.com"]])  # only the candidate's copy
 
     def test_robots_and_sitemap(self):
         self.assertContains(self.client.get(reverse("robots_txt")), "Disallow: /admin/")
