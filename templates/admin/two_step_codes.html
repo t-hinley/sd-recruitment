@@ -1,0 +1,38 @@
+{% extends "auth_base.html" %}
+{% block title %}Your backup codes{% endblock %}
+{% block heading %}Save your backup codes{% endblock %}
+{% block subheading %}If you lose your phone, each of these codes lets you sign in once instead of the 6-digit code. They're shown only now, so keep them somewhere safe (a password manager, or printed and locked away).{% endblock %}
+{% block cardbody %}
+<div class="authcodes" id="codes" data-account="{{ account }}">
+  {% for c in codes %}<code>{{ c }}</code>{% endfor %}
+</div>
+<div class="authcodebtns">
+  <button type="button" class="authbtn2" id="codes-download">Download</button>
+  <button type="button" class="authbtn2" id="codes-copy">Copy</button>
+  <button type="button" class="authbtn2" onclick="window.print()">Print</button>
+</div>
+<label class="authcheck"><input type="checkbox" id="codes-saved"> I've saved these codes somewhere safe</label>
+<a class="authbtn is-disabled" id="codes-continue" href="{% if next %}{{ next }}{% else %}{% url 'admin:index' %}{% endif %}" aria-disabled="true"><span aria-hidden="true">&rarr;</span> Continue</a>
+<p class="authnote">Creating new codes later (from your Profile) cancels these ones.</p>
+<script>
+(function () {
+  var box = document.getElementById("codes");
+  var text = "SD Recruitment admin – backup codes for " + box.dataset.account + "\nEach code works once.\n\n" +
+    Array.prototype.map.call(box.querySelectorAll("code"), function (c) { return c.textContent; }).join("\n") + "\n";
+  document.getElementById("codes-download").addEventListener("click", function () {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], {type: "text/plain"}));
+    a.download = "sd-recruitment-backup-codes.txt"; document.body.appendChild(a); a.click(); a.remove();
+  });
+  document.getElementById("codes-copy").addEventListener("click", function () {
+    var btn = this;
+    navigator.clipboard.writeText(text).then(function () { btn.textContent = "Copied"; });
+  });
+  var tick = document.getElementById("codes-saved"), go = document.getElementById("codes-continue");
+  tick.addEventListener("change", function () {
+    go.classList.toggle("is-disabled", !tick.checked); go.setAttribute("aria-disabled", String(!tick.checked));
+  });
+  go.addEventListener("click", function (e) { if (!tick.checked) { e.preventDefault(); tick.focus(); } });
+})();
+</script>
+{% endblock %}

@@ -1,15 +1,22 @@
 {% extends "auth_base.html" %}
 {% block title %}Two-step login{% endblock %}
-{% block heading %}Enter your code{% endblock %}
-{% block subheading %}Open your authenticator app and enter the 6-digit code for SD Recruitment ({{ account }}).{% endblock %}
+{% block heading %}{% if backup %}Use a backup code{% else %}Enter your code{% endif %}{% endblock %}
+{% block subheading %}{% if backup %}Enter one of the backup codes you saved when you set up two-step login ({{ account }}). Each code works once.{% else %}Open your authenticator app and enter the 6-digit code for SD Recruitment ({{ account }}).{% endif %}{% endblock %}
 {% block cardbody %}
 <form method="post" novalidate>
   {% csrf_token %}
   {% if error %}<div class="autherr" role="alert">{{ error }}</div>{% endif %}
-  <label for="id_code">6-digit code</label>
-  <input type="text" name="code" id="id_code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" placeholder="123 456" autofocus required>
+  {% if backup %}
+    <input type="hidden" name="mode" value="backup">
+    <label for="id_code">Backup code</label>
+    <input type="text" name="code" id="id_code" maxlength="12" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="abcde-12345" autofocus required>
+  {% else %}
+    <label for="id_code">6-digit code</label>
+    <input type="text" name="code" id="id_code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" placeholder="123 456" autofocus required>
+  {% endif %}
   <button class="authbtn" type="submit"><span aria-hidden="true">&rarr;</span> Verify</button>
 </form>
+<p class="authlinks">{% if backup %}<a href="?">Use my authenticator app instead</a>{% else %}<a href="?backup=1">Lost your phone? Use a backup code</a>{% endif %}</p>
 <p class="authlinks"><a href="{% url 'admin:login' %}">Back to log in</a></p>
-<p class="authnote">Lost your phone? Ask an administrator to reset your two-step login.</p>
+<p class="authnote">No phone and no backup codes? Ask an administrator to reset your two-step login.</p>
 {% endblock %}

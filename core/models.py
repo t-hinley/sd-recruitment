@@ -264,3 +264,15 @@ class AccountStatusChange(models.Model):
 
     def __str__(self):
         return f"{self.username} – {self.get_action_display()} {self.changed_at:%d/%m/%Y}"
+
+
+class BackupCode(models.Model):
+    """Single-use backup codes for two-step sign-in when the phone is lost. Only a keyed hash is stored;
+    the codes themselves are shown once. Removing the authenticator app removes its codes too."""
+
+    device = models.ForeignKey(AuthenticatorDevice, on_delete=models.CASCADE, related_name="backup_codes")
+    code_hash = models.CharField(max_length=64, editable=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "backup code"

@@ -37,3 +37,14 @@ a.authbtn{display:grid;place-items:center;text-decoration:none}
 .authkey summary{cursor:pointer;color:#304B98;font-weight:600}
 .authkey code{font-size:13px;word-break:normal;line-height:1.8;background:#F3F5F8;padding:2px 6px;border-radius:6px}
 .authnote{font-size:13px;color:#5b678a;text-align:center;margin-top:8px}
+/* Backup codes */
+.authcodes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0 12px;padding:14px;background:#F3F5F8;border-radius:10px}
+.authcodes code{font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.04em;text-align:center;padding:6px 0;color:#1B2A5C}
+.authcodebtns{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+.authbtn2{flex:1;height:40px;border:1.5px solid #C9D0E4;border-radius:8px;background:#fff;color:#1E2F9A;font:600 15px 'Source Sans 3',Arial,sans-serif;cursor:pointer}
+.authbtn2:hover{border-color:#1E2F9A}
+.authcheck{display:flex;gap:10px;align-items:center;font-weight:400;cursor:pointer}
+.authcheck input{width:18px;height:18px;margin:0;accent-color:#1E2F9A}
+a.authbtn{display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;box-sizing:border-box}
+a.authbtn.is-disabled{opacity:.45;box-shadow:none;cursor:not-allowed}
+@media print{.authback,.authlogo,.authcodebtns,.authcheck,a.authbtn,.authnote{display:none!important}.authpage{background:#fff!important}.authcard{box-shadow:none!important}}

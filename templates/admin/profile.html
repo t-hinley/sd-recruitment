@@ -28,6 +28,16 @@
         <div><b>Two-step login</b><small>{% if p_authenticator and p_authenticator.confirmed %}Authenticator app set up on {{ p_authenticator.confirmed_at|date:"j F Y" }}{% elif p_two_step_on %}You'll set up an authenticator app at your next sign-in{% else %}Not turned on for this website{% endif %}</small></div>
         <span>{% if p_authenticator and p_authenticator.confirmed %}On{% else %}Off{% endif %}</span>
       </div>
+      {% if p_authenticator and p_authenticator.confirmed %}
+      <div class="pfrow">
+        <div><b>Backup codes</b><small>{{ p_backup_left }} of 10 left. Use one to sign in if you lose your phone.{% if p_backup_left <= 3 %} <strong>Running low: create new ones.</strong>{% endif %}</small></div>
+        <form method="post" action="{% url 'admin:two_step_new_codes' %}" onsubmit="return confirm('Create 10 new backup codes? Your old codes will stop working.')">{% csrf_token %}<button type="submit" class="pflinkbtn">Create new codes</button></form>
+      </div>
+      <div class="pfrow">
+        <div><b>New phone</b><small>Removes the app on your old phone and signs you out. You'll scan a new QR code when you sign in.</small></div>
+        <form method="post" action="{% url 'admin:two_step_new_phone' %}" onsubmit="return confirm('Remove your current authenticator app and sign out? You will set up your new phone when you sign in again.')">{% csrf_token %}<button type="submit" class="pflinkbtn">Set up on a new phone</button></form>
+      </div>
+      {% endif %}
     </div>
   </section>
 </div>

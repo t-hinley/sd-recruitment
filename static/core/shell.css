@@ -103,3 +103,4 @@ body.sd-shell{--bg:#F3F5FA;--page:#F7F8FC}
 .pfrow{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;background:#FBF7F2;border-radius:10px}
 .pfrow b{color:#12305C}.pfrow a{font-weight:600;color:#304B98;text-decoration:none}.pfrow a:hover{text-decoration:underline}
 @media(max-width:640px){.pfgrid{grid-template-columns:1fr}.pfhead{flex-direction:column;align-items:flex-start}}
+.pflinkbtn{border:0;background:none;padding:0;font:inherit;font-weight:600;color:#304B98;cursor:pointer;white-space:nowrap}.pflinkbtn:hover{text-decoration:underline}.pfrow form{margin:0}

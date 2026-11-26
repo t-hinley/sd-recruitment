@@ -63,7 +63,17 @@ class SDAdminSite(admin.AdminSite):
                 path("reports/", self.admin_view(self.reports_view), name="reports"),
                 path("cv/<int:pk>/", self.admin_view(resume_download), name="resume_download"),
                 path("two-step/", self.two_step_verify, name="two_step"),
-                path("two-step/setup/", self.two_step_setup, name="two_step_setup")] + super().get_urls()
+                path("two-step/setup/", self.two_step_setup, name="two_step_setup"),
+                path("two-step/backup-codes/", self.admin_view(self.two_step_page("codes")), name="two_step_codes"),
+                path("two-step/backup-codes/new/", self.admin_view(self.two_step_page("new_codes")),
+                     name="two_step_new_codes"),
+                path("two-step/new-phone/", self.admin_view(self.two_step_page("new_phone")),
+                     name="two_step_new_phone")] + super().get_urls()
+
+    def two_step_page(self, name):
+        from django.views.decorators.cache import never_cache
+        from . import two_step
+        return never_cache(lambda request: getattr(two_step, name)(request, self))
 
     # Two-step sign-in pages (core/two_step.py). Not wrapped in admin_view: the person isn't signed in yet.
     def two_step_verify(self, request):
@@ -120,7 +130,9 @@ class SDAdminSite(admin.AdminSite):
 
     def profile_view(self, request):
         from django.template.response import TemplateResponse
+        from . import backup_codes
         user = request.user
+        device = getattr(user, "authenticator", None)
         return TemplateResponse(request, "admin/profile.html", {
             **self.each_context(request), "title": "Profile",
             "p_name": user.get_full_name() or user.get_username(),
@@ -130,7 +142,8 @@ class SDAdminSite(admin.AdminSite):
             "p_role": "Administrator" if user.is_superuser else "Staff",
             "p_last_login": user.last_login,
             "p_two_step_on": __import__("django.conf").conf.settings.ADMIN_TWO_FACTOR,
-            "p_authenticator": getattr(user, "authenticator", None),
+            "p_authenticator": device,
+            "p_backup_left": backup_codes.remaining(device),
         })
 
     def reports_view(self, request):

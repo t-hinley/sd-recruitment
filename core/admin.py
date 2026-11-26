@@ -258,11 +258,15 @@ class ContactEnquiryAdmin(EnquiryAdmin):
 class AuthenticatorDeviceAdmin(admin.ModelAdmin):
     """Administrators only. Delete a user's authenticator app (e.g. lost phone) and they set it up again at
     their next sign-in. The secret is never shown."""
-    list_display = ("user", "confirmed", "confirmed_at", "created_at")
+    list_display = ("user", "confirmed", "confirmed_at", "backup_left", "created_at")
     list_filter = ("confirmed",)
     search_fields = ("user__username", "user__email", "user__first_name", "user__last_name")
     fields = ("user", "confirmed", "confirmed_at", "created_at")
     readonly_fields = fields
+
+    @admin.display(description="Backup codes left")
+    def backup_left(self, obj):
+        return obj.backup_codes.filter(used_at__isnull=True).count()
 
     def has_module_permission(self, request):
         return request.user.is_superuser
@@ -381,8 +385,9 @@ class UserAdmin(BaseUserAdmin):
     def two_step(self, obj):
         device = getattr(obj, "authenticator", None) if obj.pk else None
         if device and device.confirmed:
-            return f"Authenticator app set up on {timezone.localtime(device.confirmed_at):%d/%m/%Y}" \
-                if device.confirmed_at else "Authenticator app set up"
+            left = device.backup_codes.filter(used_at__isnull=True).count()
+            when = f" on {timezone.localtime(device.confirmed_at):%d/%m/%Y}" if device.confirmed_at else ""
+            return f"Authenticator app set up{when} · {left} of 10 backup codes left"
         return "Not set up yet (they're asked at their next sign-in)"
 
     @admin.display(description="Role")

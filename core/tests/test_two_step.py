@@ -89,8 +89,12 @@ class TwoStepTests(TestCase):
         r = self.client.post(reverse("admin:two_step_setup"), {"code": "000000"})
         self.assertContains(r, "didn&#x27;t work")
         r = self.client.post(reverse("admin:two_step_setup"), {"code": totp.code_at(secret, int(time.time() // 30))})
-        self.assertRedirects(r, reverse("admin:index"), fetch_redirect_response=False)
+        # Signed in, and shown their ten backup codes once.
+        self.assertRedirects(r, reverse("admin:two_step_codes"), fetch_redirect_response=False)
         self.assertTrue(AuthenticatorDevice.objects.get(user=self.boss).confirmed)
+        page = self.client.get(reverse("admin:two_step_codes"))
+        self.assertEqual(len(re.findall(r"<code>[a-z2-9]{5}-[a-z2-9]{5}</code>", page.content.decode())), 10)
+        self.assertRedirects(self.client.get(reverse("admin:two_step_codes")), reverse("admin:profile"))  # once only
         self.assertEqual(self.client.get(reverse("admin:index")).status_code, 200)
 
     def _with_app(self):
@@ -153,3 +157,46 @@ class TwoStepTests(TestCase):
         self.assertEqual(self.client.get(reverse("admin:core_authenticatordevice_changelist")).status_code, 403)
         self.client.force_login(self.boss)
         self.assertEqual(self.client.get(reverse("admin:core_authenticatordevice_changelist")).status_code, 200)
+
+
+@override_settings(STORAGES=STATIC, ADMIN_TWO_FACTOR=True)
+class BackupCodeTests(TestCase):
+    def setUp(self):
+        from core import backup_codes
+        cache.clear()
+        self.boss = User.objects.create_superuser("boss", "boss@example.com", PW)
+        self.dev = AuthenticatorDevice.objects.create(user=self.boss, secret=totp.new_secret(), confirmed=True)
+        self.codes = backup_codes.create(self.dev)
+
+    def _password(self):
+        return self.client.post(reverse("admin:login"), {"username": "boss", "password": PW})
+
+    def test_backup_code_signs_in_once(self):
+        self._password()
+        self.assertContains(self.client.get(reverse("admin:two_step") + "?backup=1"), "Backup code")
+        r = self.client.post(reverse("admin:two_step"), {"code": self.codes[0].upper().replace("-", " "),
+                                                         "mode": "backup"})
+        self.assertRedirects(r, reverse("admin:index"), fetch_redirect_response=False)
+        self.assertEqual(self.dev.backup_codes.filter(used_at__isnull=True).count(), 9)
+        self.client.logout()
+        self._password()
+        r = self.client.post(reverse("admin:two_step"), {"code": self.codes[0], "mode": "backup"})
+        self.assertContains(r, "Each code works only once")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_codes_are_not_stored_in_plain_text(self):
+        stored = set(self.dev.backup_codes.values_list("code_hash", flat=True))
+        self.assertFalse(stored & set(self.codes))
+
+    def test_new_codes_replace_old_and_new_phone_resets(self):
+        self.client.force_login(self.boss)
+        self.assertContains(self.client.get(reverse("admin:profile")), "10 of 10 left")
+        r = self.client.post(reverse("admin:two_step_new_codes"))
+        self.assertRedirects(r, reverse("admin:two_step_codes"), fetch_redirect_response=False)
+        from core import backup_codes
+        self.assertFalse(backup_codes.use(self.dev, self.codes[1]))  # old codes cancelled
+        self.client.post(reverse("admin:two_step_new_phone"))
+        self.assertFalse(AuthenticatorDevice.objects.filter(user=self.boss).exists())
+        self.assertNotIn("_auth_user_id", self.client.session)
+        r = self._password()
+        self.assertRedirects(r, reverse("admin:two_step_setup"), fetch_redirect_response=False)

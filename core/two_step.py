@@ -17,7 +17,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from . import security, totp
+from . import backup_codes, security, totp
 from .models import AuthenticatorDevice
 
 PENDING = "two_step_pending"
@@ -61,13 +61,20 @@ def _pending(request):
     return (data, user) if user else (None, None)
 
 
-def _finish(request, user, data):
+def _safe_next(request, nxt):
+    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return nxt
+    return ""
+
+
+def _finish(request, user, data, show_codes=None):
     request.session.pop(PENDING, None)
     auth_login(request, user, backend=data["backend"])
-    nxt = data.get("next") or ""
-    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
-        return redirect(nxt)
-    return redirect("admin:index")
+    nxt = _safe_next(request, data.get("next") or "")
+    if show_codes:
+        request.session[backup_codes.SESSION_KEY] = {"codes": show_codes, "next": nxt}
+        return redirect("admin:two_step_codes")
+    return redirect(nxt or "admin:index")
 
 
 def _wrong_code(request, user, data):
@@ -96,17 +103,33 @@ def verify(request, site):
     error = ""
     if request.method == "POST":
         form = CodeForm(request.POST)
-        step = totp.match(device.secret, request.POST.get("code", "")) if form.is_valid() else None
-        if step is not None and step > device.last_used_step:
-            AuthenticatorDevice.objects.filter(pk=device.pk).update(last_used_step=step)
-            return _finish(request, user, data)
+        raw = request.POST.get("code", "")
+        if form.is_valid() and backup_codes.looks_like_backup_code(raw):
+            if backup_codes.use(device, raw):
+                left = backup_codes.remaining(device)
+                security.logger.warning("Backup code used to sign in by %s (%d left)", user.get_username(), left)
+                messages.warning(request, f"You signed in with a backup code. {left} left. Lost your phone? Go to "
+                                          f"Profile and choose 'Set up on a new phone'."
+                                 + (" Your backup codes are running out: create new ones on your Profile."
+                                    if left <= 3 else ""))
+                return _finish(request, user, data)
+        else:
+            step = totp.match(device.secret, raw) if form.is_valid() else None
+            if step is not None and step > device.last_used_step:
+                AuthenticatorDevice.objects.filter(pk=device.pk).update(last_used_step=step)
+                return _finish(request, user, data)
         response = _wrong_code(request, user, data)
         if response:
             return response
-        error = "That code didn't work. Check the time on your phone and enter the newest code."
+        error = ("That backup code didn't work. Each code works only once." if backup_mode(request) else
+                 "That code didn't work. Check the time on your phone and enter the newest code.")
     return render(request, "admin/two_step_verify.html", {
-        **site.each_context(request), "site_name": ISSUER, "error": error,
+        **site.each_context(request), "site_name": ISSUER, "error": error, "backup": backup_mode(request),
         "account": user.email or user.get_username()})
+
+
+def backup_mode(request):
+    return request.GET.get("backup") == "1" or request.POST.get("mode") == "backup"
 
 
 def setup(request, site):
@@ -123,8 +146,7 @@ def setup(request, site):
         if step is not None:
             AuthenticatorDevice.objects.filter(pk=device.pk).update(
                 confirmed=True, confirmed_at=timezone.now(), last_used_step=step)
-            messages.success(request, "Two-step login is set up.", extra_tags="toast")
-            return _finish(request, user, data)
+            return _finish(request, user, data, show_codes=backup_codes.create(device))
         response = _wrong_code(request, user, data)
         if response:
             return response
@@ -133,3 +155,40 @@ def setup(request, site):
     return render(request, "admin/two_step_setup.html", {
         **site.each_context(request), "site_name": ISSUER, "error": error, "account": account,
         "qr_svg": totp.qr_svg(uri), "secret": totp.grouped(device.secret)})
+
+
+# ---- Backup codes and new phone (signed-in pages, wrapped in admin_view) ----------------------------------
+def codes(request, site):
+    """Shows newly created backup codes, once."""
+    shown = request.session.pop(backup_codes.SESSION_KEY, None)
+    if not shown:
+        messages.info(request, "Backup codes are only shown once. You can create new ones here.")
+        return redirect("admin:profile")
+    return render(request, "admin/two_step_codes.html", {
+        **site.each_context(request), "site_name": ISSUER, "codes": shown["codes"],
+        "account": request.user.email or request.user.get_username(),
+        "next": _safe_next(request, shown.get("next") or "")})
+
+
+def new_codes(request, site):
+    if request.method != "POST":
+        return redirect("admin:profile")
+    device = AuthenticatorDevice.objects.filter(user=request.user, confirmed=True).first()
+    if not device:
+        messages.error(request, "Set up your authenticator app first.")
+        return redirect("admin:profile")
+    request.session[backup_codes.SESSION_KEY] = {"codes": backup_codes.create(device), "next": ""}
+    security.logger.warning("New backup codes created by %s", request.user.get_username())
+    return redirect("admin:two_step_codes")
+
+
+def new_phone(request, site):
+    """Remove your own authenticator app (and its backup codes), sign out, and set up again at sign-in."""
+    from django.contrib.auth import logout as auth_logout
+    if request.method != "POST":
+        return redirect("admin:profile")
+    AuthenticatorDevice.objects.filter(user=request.user).delete()
+    security.logger.warning("%s removed their authenticator app to set up a new phone", request.user.get_username())
+    auth_logout(request)
+    messages.success(request, "Your old phone has been removed. Sign in again to set up your new phone.")
+    return redirect("admin:login")
