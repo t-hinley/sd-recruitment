@@ -16,9 +16,15 @@ STAFF, ADMIN = "staff", "admin"
 ROLES = [
     (STAFF, "Staff", "Sees candidates, vacancies and general enquiries, opens CVs, and updates status, "
                      "assignment and notes. Can't delete records, download reports or manage users."),
-    (ADMIN, "Administrator", "Everything Staff can do, plus reports, deleting enquiries, managing users, "
-                             "suspending accounts and the account history."),
+    (ADMIN, "Admin", "Everything Staff can do, plus reports, deleting enquiries, managing users, "
+                     "suspending accounts and the account history."),
 ]
+ROLE_ICONS = {
+    STAFF: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>',
+    ADMIN: '<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+}
+ROLE_HELP = ("Staff get the Staff role's permissions (work on enquiries); Admin can do everything. "
+             "Hover over a role to see what it allows.")
 EMAIL_LINK, SET_NOW = "email", "set"
 PASSWORD_CHOICES = [
     (EMAIL_LINK, "Email them a link (recommended)",
@@ -28,14 +34,24 @@ PASSWORD_CHOICES = [
 
 
 class CardRadio(forms.RadioSelect):
-    """Radio buttons shown as cards with a title and a short explanation."""
+    """Radio buttons shown as cards with a title and a short explanation (compact=True: a name and an icon
+    only, with the explanation as a tooltip)."""
 
-    def __init__(self, cards, *args, **kwargs):
-        self.cards = cards
+    def __init__(self, cards, *args, compact=False, icons=None, **kwargs):
+        self.cards, self.compact, self.icons = cards, compact, icons or {}
         super().__init__(*args, **kwargs)
 
     def render(self, name, value, attrs=None, renderer=None):
         disabled = (attrs or {}).get("disabled") or self.attrs.get("disabled")
+        if self.compact:
+            rows = [(text, name, key, "checked" if str(value) == key else "", "disabled" if disabled else "",
+                     format_html('<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+                                 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+                                 '{}</svg>', format_html(self.icons.get(key, ""))), title)
+                    for key, title, text in self.cards]
+            return format_html('<div class="sd-roles" role="radiogroup">{}</div>', format_html_join(
+                "", '<label class="sd-role" title="{}"><input type="radio" name="{}" value="{}" {} {}>'
+                    '<span>{}{}</span></label>', rows))
         rows = [(name, key, "checked" if str(value) == key else "", "disabled" if disabled else "", title, text)
                 for key, title, text in self.cards]
         return format_html('<div class="sd-cards" role="radiogroup">{}</div>', format_html_join(
@@ -57,8 +73,8 @@ def apply_role(user, role):
 
 
 def _role_field():
-    return forms.ChoiceField(label="Access", choices=[(k, t) for k, t, _ in ROLES], initial=STAFF,
-                             widget=CardRadio(ROLES))
+    return forms.ChoiceField(label="Role", choices=[(k, t) for k, t, _ in ROLES], initial=STAFF,
+                             help_text=ROLE_HELP, widget=CardRadio(ROLES, compact=True, icons=ROLE_ICONS))
 
 
 def _clean_email(form):

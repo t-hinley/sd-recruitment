@@ -123,7 +123,7 @@ class TeamMemberFormTests(TestCase):
     def test_add_page_is_simple(self):
         r = self.client.get(self.add_url)
         self.assertContains(r, "Email them a link")
-        self.assertContains(r, "Administrator")
+        self.assertContains(r, ">Admin<")
         self.assertNotContains(r, "user_permissions")
         self.assertNotContains(r, "Superuser status")
 

@@ -408,3 +408,15 @@ a .sd-person b { text-decoration: none; }
 .sd-pw { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .sd-pw__btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .sd-pw small { color: #6B7690; font-size: 12px; max-width: 560px; }
+
+/* ---- Users: compact role choice (Staff / Admin) ---------------------------- */
+.sd-roles { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.sd-roles label.sd-role, form .aligned .sd-roles label.sd-role { display: block; width: auto; min-width: 0; padding: 0;
+  margin: 0; float: none; font-weight: 600; cursor: pointer; }
+.sd-role input { position: absolute; opacity: 0; pointer-events: none; }
+.sd-role > span { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px 9px 14px; border: 1.5px solid #D5DAE5;
+  border-radius: 999px; background: #fff; color: #55627D; font-size: 14.5px; transition: border-color .15s, background .15s; }
+.sd-role:hover > span { border-color: #8C9BC7; color: #304B98; }
+.sd-role input:checked + span { border-color: #304B98; background: #304B98; color: #fff; box-shadow: 0 0 0 3px rgba(48,75,152,.15); }
+.sd-role input:focus-visible + span { outline: 2px solid #ED5A2A; outline-offset: 2px; }
+.sd-role input:disabled + span { opacity: .6; cursor: default; }
