@@ -144,9 +144,12 @@ def setup(request, site):
     if request.method == "POST":
         step = totp.match(device.secret, request.POST.get("code", ""))
         if step is not None:
-            AuthenticatorDevice.objects.filter(pk=device.pk).update(
-                confirmed=True, confirmed_at=timezone.now(), last_used_step=step)
-            return _finish(request, user, data, show_codes=backup_codes.create(device))
+            from django.db import transaction
+            with transaction.atomic():  # all or nothing: app confirmed together with its backup codes
+                codes = backup_codes.create(device)
+                AuthenticatorDevice.objects.filter(pk=device.pk).update(
+                    confirmed=True, confirmed_at=timezone.now(), last_used_step=step)
+            return _finish(request, user, data, show_codes=codes)
         response = _wrong_code(request, user, data)
         if response:
             return response
