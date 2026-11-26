@@ -90,9 +90,9 @@ def _clean_email(form):
 class TeamMemberAddForm(forms.ModelForm):
     first_name = forms.CharField(max_length=150)
     last_name = forms.CharField(max_length=150)
-    email = forms.EmailField(label="Email address", help_text="They can sign in with this or their username.")
+    email = forms.EmailField(label="Email address")
     username = forms.CharField(max_length=150, required=False,
-                               help_text="Optional. Leave blank to use the start of their email address.")
+                               widget=forms.TextInput(attrs={"placeholder": "Optional"}))
     role = _role_field()
     password_setup = forms.ChoiceField(label="Password", choices=[(k, t) for k, t, _ in PASSWORD_CHOICES],
                                        initial=EMAIL_LINK, widget=CardRadio(PASSWORD_CHOICES))
@@ -167,7 +167,8 @@ class TeamMemberChangeForm(UserChangeForm):
         self.request_user = kwargs.pop("request_user", None)
         super().__init__(*args, **kwargs)
         self.fields["email"].required = True
-        self.fields["email"].help_text = "They can sign in with this or their username."
+        self.fields["email"].help_text = ""
+        self.fields["username"].help_text = ""
         if self.instance.pk:
             self.fields["role"].initial = role_of(self.instance)
             if self.request_user and self.request_user.pk == self.instance.pk:
