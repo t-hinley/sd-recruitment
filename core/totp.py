@@ -47,7 +47,7 @@ def provisioning_uri(secret, account, issuer):
 
 def qr_svg(uri):
     import segno
-    return segno.make(uri, error="m").svg_inline(scale=5, dark="#1B2A5C", light="#FFFFFF")
+    return segno.make(uri, error="m").svg_inline(omitsize=True, border=2, dark="#1B2A5C", light="#FFFFFF")
 
 
 def grouped(secret):
