@@ -1,0 +1,62 @@
+{% extends "admin/change_list.html" %}
+{% block content_title %}
+  <div class="fb-title"><h1>{{ fb_list_title }}</h1>{% if fb_list_subtitle %}<p>{{ fb_list_subtitle }}</p>{% endif %}</div>
+{% endblock %}
+{% block object-tools %}{% endblock %}
+{% block filters %}{% endblock %}
+{% block date_hierarchy %}{% endblock %}
+
+{% block search %}
+<div class="fb">
+  <nav class="fb-tabs" aria-label="Quick views">
+    {% for t in fb_tabs %}
+      <a href="{{ t.url }}" class="fb-tab{% if t.on %} is-on{% endif %}{% if t.tone %} fb-tab--{{ t.tone }}{% endif %}"{% if t.on %} aria-current="page"{% endif %}>{{ t.label }} <b>{{ t.count }}</b></a>
+    {% endfor %}
+  </nav>
+
+  <div class="fb-bar">
+    <form class="fb-search" method="get" role="search">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" name="q" value="{{ cl.query }}" placeholder="Search name, email, phone, position…" aria-label="Search">
+      {% for k, v in fb_hidden %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    </form>
+
+    {% for f in fb_primary %}
+      <label class="fb-dd{% if f.active %} is-set{% endif %}">
+        <span class="fb-dd__t">{{ f.title }}:</span>
+        <select onchange="window.location=this.value" aria-label="{{ f.title }}">
+          {% for o in f.options %}<option value="{{ o.url }}"{% if o.selected %} selected{% endif %}>{% if forloop.first %}Any{% else %}{{ o.label }}{% endif %}</option>{% endfor %}
+        </select>
+      </label>
+    {% endfor %}
+
+    {% if fb_more %}
+    <details class="fb-more"{% if fb_more_active %} data-active{% endif %}>
+      <summary>+ More filters{% if fb_more_active %} <b>{{ fb_more_active }}</b>{% endif %}</summary>
+      <div class="fb-panel">
+        <p class="fb-panel__h">More filters</p>
+        {% for f in fb_more %}
+          <label class="fb-field">
+            <span>{{ f.title }}</span>
+            <select onchange="window.location=this.value"{% if f.active %} class="is-set"{% endif %}>
+              {% for o in f.options %}<option value="{{ o.url }}"{% if o.selected %} selected{% endif %}>{% if forloop.first %}Any{% else %}{{ o.label }}{% endif %}</option>{% endfor %}
+            </select>
+          </label>
+        {% endfor %}
+      </div>
+    </details>
+    {% endif %}
+  </div>
+
+  <div class="fb-chips">
+    {% for c in fb_chips %}<a class="fb-chip" href="{{ c.url }}" title="Remove this filter">{{ c.label }} <i aria-hidden="true">✕</i></a>{% endfor %}
+    {% if fb_chips %}<a class="fb-clear" href="{{ fb_clear_url }}">Clear all</a>{% endif %}
+    <span class="fb-count">Showing {{ cl.result_count }} of {{ cl.full_result_count|default:cl.result_count }}</span>
+  </div>
+</div>
+<script>
+document.addEventListener("click", function (e) {  // close "More filters" when clicking elsewhere
+  document.querySelectorAll(".fb-more[open]").forEach(function (d) { if (!d.contains(e.target)) d.removeAttribute("open"); });
+});
+</script>
+{% endblock %}

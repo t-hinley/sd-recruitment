@@ -281,7 +281,7 @@ class SDAdminSite(admin.AdminSite):
         support = cands.aggregate(**{key: Count("id", filter=Q(**{f"support_{key}": True}))
                                      for key, _ in CandidateRegistration.SUPPORT_CHOICES})
         support_rows = bars([(label, support[key]) for key, label in CandidateRegistration.SUPPORT_CHOICES])
-        support_links = {label: f"{cand_url}?support_{key}__exact=1" for key, label in CandidateRegistration.SUPPORT_CHOICES}
+        support_links = {label: f"{cand_url}?service={key}" for key, label in CandidateRegistration.SUPPORT_CHOICES}
         for r in support_rows:
             r["url"] = support_links[r["label"]]
 

@@ -284,3 +284,39 @@ class RecordPageTests(TestCase):
             self.assertRedirects(r, url)
         e.refresh_from_db()
         self.assertEqual((e.status, e.assigned_to, e.notes), ("contacted", boss, "Called back"))
+
+
+@override_settings(STORAGES={"default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+                             "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})
+class FilterBarTests(TestCase):
+    def setUp(self):
+        self.boss = User.objects.create_superuser("fbboss", "fb@example.com", "a-strong-pass-123")
+        self.client.force_login(self.boss)
+        base = dict(phone="0400 000 000", location="Perth", visa_type="Australian Citizen", consent=True,
+                    preferred_location="Perth Metro", position_sought="Carer", experience="1–3 Years",
+                    employment_types=["Full - Time"])
+        CandidateRegistration.objects.create(full_name="Amy New", email="a@example.com", industry="Healthcare & Nursing",
+                                             status="new", support_interview=True, **base)
+        CandidateRegistration.objects.create(full_name="Bo Mine", email="b@example.com", industry="Hospitality & Tourism",
+                                             status="contacted", assigned_to=self.boss, support_jobs=True, **base)
+        self.url = reverse("admin:core_candidateregistration_changelist")
+
+    def test_tabs_dropdowns_and_no_side_column(self):
+        r = self.client.get(self.url)
+        self.assertContains(r, 'class="fb-tab is-on')
+        self.assertContains(r, "Mine <b>1</b>", html=False)
+        self.assertContains(r, "Unassigned <b>1</b>", html=False)
+        self.assertContains(r, "+ More filters")
+        self.assertNotContains(r, 'id="changelist-filter"')
+
+    def test_filters_and_chips(self):
+        r = self.client.get(self.url + "?service=interview")
+        self.assertContains(r, "Amy New")
+        self.assertNotContains(r, "Bo Mine")
+        self.assertContains(r, "Service requested: Interview")
+        r = self.client.get(self.url + "?assigned=me")  # the Mine tab: no duplicate chip
+        self.assertContains(r, "Bo Mine")
+        self.assertNotContains(r, "Amy New")
+        self.assertNotContains(r, 'class="fb-chip"')
+        r = self.client.get(self.url + "?q=Amy")
+        self.assertContains(r, "Search: Amy")

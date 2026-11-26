@@ -55,12 +55,46 @@ AIRTABLE = ("Airtable copy", {
 SYNC_FIELDS = ("airtable_badge", "airtable_synced_at", "airtable_id", "airtable_error")
 
 
+class ServiceFilter(admin.SimpleListFilter):
+    title = "service requested"
+    parameter_name = "service"
+
+    def lookups(self, request, model_admin):
+        return CandidateRegistration.SUPPORT_CHOICES
+
+    def queryset(self, request, queryset):
+        keys = {k for k, _ in CandidateRegistration.SUPPORT_CHOICES}
+        return queryset.filter(**{f"support_{self.value()}": True}) if self.value() in keys else queryset
+
+
+class HasCVFilter(admin.SimpleListFilter):
+    title = "CV"
+    parameter_name = "cv"
+
+    def lookups(self, request, model_admin):
+        return [("yes", "Has a CV"), ("no", "No CV")]
+
+    def queryset(self, request, queryset):
+        if self.value() == "yes":
+            return queryset.exclude(resume="")
+        if self.value() == "no":
+            return queryset.filter(resume="")
+        return queryset
+
+
 class EnquiryAdmin(admin.ModelAdmin):
     change_form_template = "admin/enquiry_change_form.html"
+    change_list_template = "admin/enquiry_change_list.html"
+    primary_filters = ("status", "assigned", "industry")  # shown in the bar; the rest under "More filters"
+    filter_titles = {"created_at": "Received", "airtable_status": "Airtable", "assigned": "Assigned to",
+                     "industry": "Industry", "experience": "Experience", "positions_count": "Positions"}
+    list_tabs = (("All", {}, ""), ("New", {"status__exact": "new"}, "warn"), ("Mine", {"assigned": "me"}, ""),
+                 ("Unassigned", {"assigned": "none"}, "warn"))
+    list_title = "Enquiries"
+    list_subtitle = ""
     wide_fields = ()  # long text shown full width on the record page
     list_editable = ("status",)
     list_select_related = ("assigned_to",)
-    date_hierarchy = "created_at"
     list_per_page = 50
     actions = ["assign_to_me", "mark_contacted", "mark_closed"]
 
@@ -113,6 +147,14 @@ class EnquiryAdmin(admin.ModelAdmin):
     @admin.display(description="Received")
     def received_full(self, obj):
         return timezone.localtime(obj.created_at).strftime("%d %b %Y, %I:%M %p")
+
+    def changelist_view(self, request, extra_context=None):
+        from . import list_filters
+        response = super().changelist_view(request, extra_context)
+        cl = getattr(response, "context_data", {}).get("cl") if hasattr(response, "context_data") else None
+        if cl is not None:
+            response.context_data.update(list_filters.build(request, self, cl))
+        return response
 
     # ---- record page ---------------------------------------------------------------
     kind = "Enquiry"
@@ -202,6 +244,9 @@ class AirtableAdminMixin:
 class VacancyEnquiryAdmin(AirtableAdminMixin, EnquiryAdmin):
     list_display = ("company", "position", "industry", "location", "status", "handler", "airtable_badge", "received")
     list_filter = ("status", AssignedFilter, "industry", "positions_count", "airtable_status", "created_at")
+    list_tabs = EnquiryAdmin.list_tabs + (("Recruiting", {"status__exact": "recruiting"}, ""),)
+    list_title = "Vacancies"
+    list_subtitle = "Vacancies employers sent through the website"
     search_fields = ("company", "contact_name", "email", "phone", "position", "location", "details", "notes")
     submitted_fields = ("company", "industry", "contact_name", "phone_link", "email_link", "position",
                         "employment_type_display", "positions_count", "location", "details", "consent",
@@ -232,9 +277,11 @@ class VacancyEnquiryAdmin(AirtableAdminMixin, EnquiryAdmin):
 class CandidateRegistrationAdmin(AirtableAdminMixin, EnquiryAdmin):
     list_display = ("full_name", "industry", "location", "support_summary", "cv", "status", "handler",
                     "airtable_badge", "received")
-    list_filter = ("status", AssignedFilter, "industry", "visa_type", "experience", "support_jobs",
-                   "support_resume", "resume_package", "support_interview", "support_career",
-                   "airtable_status", "created_at")
+    list_filter = ("status", AssignedFilter, "industry", ServiceFilter, "resume_package", HasCVFilter, "visa_type",
+                   "experience", "airtable_status", "created_at")
+    list_tabs = EnquiryAdmin.list_tabs + (("Placed", {"status__exact": "placed"}, ""),)
+    list_title = "Candidates"
+    list_subtitle = "People who registered on the website"
     search_fields = ("full_name", "email", "phone", "location", "preferred_location", "position_sought", "notes")
     list_select_related = ("assigned_to",)
     submitted_fields = ("full_name", "phone_link", "email_link", "location", "visa_type", "preferred_location",
@@ -296,6 +343,9 @@ class CandidateRegistrationAdmin(AirtableAdminMixin, EnquiryAdmin):
 class ContactEnquiryAdmin(EnquiryAdmin):
     list_display = ("name", "email", "message_preview", "status", "handler", "received")
     list_filter = ("status", AssignedFilter, "created_at")
+    primary_filters = ("status", "assigned", "created_at")
+    list_title = "General enquiries"
+    list_subtitle = "Messages from the Contact Us page"
     search_fields = ("name", "email", "phone", "message", "notes")
     submitted_fields = ("name", "email_link", "phone_link", "message", "received_full")
     fieldsets = (
