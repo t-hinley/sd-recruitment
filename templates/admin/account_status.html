@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div class="sd-acct-page">
+  {% if suspend %}
+    <p>Suspending stops {% if users|length > 1 %}these accounts{% else %}this account{% endif %} from signing in
+      straight away (password, email and authenticator code), and signs {% if users|length > 1 %}them{% else %}it{% endif %}
+      out on the next click. Nothing is deleted: enquiries, notes and past actions stay on record, and you can
+      reactivate at any time.</p>
+  {% else %}
+    <p>Reactivating lets {% if users|length > 1 %}these accounts{% else %}this account{% endif %} sign in again with
+      the existing password and authenticator app.</p>
+  {% endif %}
+  <ul class="sd-acct-list">
+    {% for u in users %}<li><strong>{{ u.get_full_name|default:u.get_username }}</strong> ({{ u.get_username }}{% if u.email %} · {{ u.email }}{% endif %})</li>{% endfor %}
+  </ul>
+  {% if error %}<p class="errornote">{{ error }}</p>{% endif %}
+  <form method="post">{% csrf_token %}
+    {% if bulk %}
+      {% for u in users %}<input type="hidden" name="_selected_action" value="{{ u.pk }}">{% endfor %}
+      <input type="hidden" name="action" value="{{ action }}">
+      <input type="hidden" name="confirm" value="1">
+    {% endif %}
+    <label for="id_reason"><strong>Reason</strong> (required – kept permanently in the account history)</label>
+    <textarea id="id_reason" name="reason" rows="4" required
+      placeholder="{% if suspend %}e.g. Left the company on 28/11/2026{% else %}e.g. Returned from leave{% endif %}">{{ reason }}</textarea>
+    <div class="sd-acct-actions">
+      <button type="submit" class="{% if suspend %}sd-acct-btn sd-acct-btn--off{% else %}sd-acct-btn{% endif %}">
+        {% if suspend %}Suspend{% else %}Reactivate{% endif %}</button>
+      <a href="{{ cancel_url }}" class="sd-acct-cancel">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

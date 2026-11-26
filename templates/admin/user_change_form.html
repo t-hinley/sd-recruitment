@@ -1,0 +1,18 @@
+{% extends "admin/change_form.html" %}
+{% block object-tools-items %}
+  {% if original and can_set_status %}
+    {% if original.is_active %}
+      <li><a class="sd-acct-btn sd-acct-btn--off" href="{% url 'admin:auth_user_status' original.pk 'suspend' %}">Suspend account</a></li>
+    {% else %}
+      <li><a class="sd-acct-btn" href="{% url 'admin:auth_user_status' original.pk 'reactivate' %}">Reactivate account</a></li>
+    {% endif %}
+  {% endif %}
+  {{ block.super }}
+{% endblock %}
+{% block form_top %}
+  {% if original and not original.is_active %}
+    <p class="sd-acct-note">This account is <strong>suspended</strong>: it can't sign in or reset its password.
+      Its history and assigned records are kept. See <em>Account history</em> below for who suspended it and why.</p>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

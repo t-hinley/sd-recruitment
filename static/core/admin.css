@@ -183,3 +183,23 @@ div.breadcrumbs { padding: 12px 40px; }
 /* Django's admin stylesheet puts a square bullet on every "ul > li"; the dashboard lists draw
    their own rows, so remove the bullet on the items themselves (some browsers, e.g. Safari, show it). */
 .sdbars>li,.sdhbars>li,.sdlist>li,.sdacts>li{list-style:none;padding-left:0}
+
+/* ---- Users: suspend / reactivate --------------------------------------- */
+.sd-acct { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.sd-acct--on { background: #E7F4EC; color: #1E6B3A; }
+.sd-acct--off { background: #FDECEC; color: #A12A2A; }
+a.sd-acct-btn, button.sd-acct-btn, .object-tools a.sd-acct-btn {
+  display: inline-block; padding: 9px 18px; border-radius: 8px; border: 0; cursor: pointer;
+  background: #304B98; color: #fff !important; font-weight: 600; font-size: 14px; text-decoration: none; }
+a.sd-acct-btn--off, button.sd-acct-btn--off, .object-tools a.sd-acct-btn--off { background: #B3261E; }
+a.sd-acct-btn:hover, button.sd-acct-btn:hover { filter: brightness(1.08); }
+.sd-acct-note { background: #FDECEC; color: #7A1F1F; border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.sd-acct-page { max-width: 640px; }
+.sd-acct-page p { line-height: 1.55; }
+.sd-acct-list { margin: 12px 0 20px; padding-left: 18px; }
+.sd-acct-page label { display: block; margin-bottom: 6px; }
+.sd-acct-page textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px;
+  border: 1px solid #C9CFDB; font: inherit; }
+.sd-acct-actions { display: flex; gap: 16px; align-items: center; margin-top: 18px; }
+.sd-acct-cancel { color: #304B98; }
+#status_changes-group td.original p { display: none; }

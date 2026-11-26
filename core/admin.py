@@ -6,6 +6,7 @@ forms only (no "Add" button), and only administrators can delete them.
 """
 
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
@@ -277,3 +278,204 @@ class AuthenticatorDeviceAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+
+# ---------------------------------------------------------------------------
+# Users: suspend instead of delete, with a permanent account history (core/accounts.py)
+# ---------------------------------------------------------------------------
+from django.contrib.auth import get_user_model  # noqa: E402
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin  # noqa: E402
+from django.shortcuts import get_object_or_404, redirect  # noqa: E402
+from django.template.response import TemplateResponse  # noqa: E402
+from django.urls import path  # noqa: E402
+
+from . import accounts  # noqa: E402
+from .models import AccountStatusChange  # noqa: E402
+
+User = get_user_model()
+
+
+class AccountStatusFilter(admin.SimpleListFilter):
+    title = "account status"
+    parameter_name = "account"
+
+    def lookups(self, request, model_admin):
+        return [("active", "Active"), ("suspended", "Suspended")]
+
+    def queryset(self, request, queryset):
+        if self.value() == "active":
+            return queryset.filter(is_active=True)
+        if self.value() == "suspended":
+            return queryset.filter(is_active=False)
+        return queryset
+
+
+class AccountHistoryInline(admin.TabularInline):
+    model = AccountStatusChange
+    fk_name = "user"
+    extra = 0
+    can_delete = False
+    verbose_name_plural = "Account history (suspensions and reactivations – kept permanently)"
+    fields = ("changed_at", "action", "reason", "by")
+    readonly_fields = fields
+
+    @admin.display(description="By")
+    def by(self, obj):
+        return person(obj.changed_by) or "—"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+if admin.site.is_registered(User):
+    admin.site.unregister(User)
+
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    """Accounts are suspended, never deleted, so the record of who did what stays for audits.
+    'Active' can only be changed with the Suspend / Reactivate buttons, which ask for a reason."""
+    list_display = ("username", "full_name", "email", "account_badge", "role", "last_login")
+    list_filter = (AccountStatusFilter, "is_superuser", "groups")
+    inlines = [AccountHistoryInline]
+    actions = ["suspend_selected", "reactivate_selected"]
+    change_form_template = "admin/user_change_form.html"
+
+    @admin.display(description="Name", ordering="first_name")
+    def full_name(self, obj):
+        return obj.get_full_name()
+
+    @admin.display(description="Account", ordering="is_active")
+    def account_badge(self, obj):
+        if obj.is_active:
+            return format_html('<span class="sd-acct sd-acct--on">Active</span>')
+        return format_html('<span class="sd-acct sd-acct--off">Suspended</span>')
+
+    @admin.display(description="Role")
+    def role(self, obj):
+        return "Administrator" if obj.is_superuser else ("Staff" if obj.is_staff else "No admin access")
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        return ro + ["is_active"] if obj else ro
+
+    def has_delete_permission(self, request, obj=None):
+        return False  # suspend instead: keeps the audit trail
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not self.has_change_permission(request):
+            actions.pop("suspend_selected", None)
+            actions.pop("reactivate_selected", None)
+        return actions
+
+    def get_urls(self):
+        return [path("<int:pk>/status/<str:change>/", self.admin_site.admin_view(self.status_view),
+                     name="auth_user_status")] + super().get_urls()
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = {**(extra_context or {}), "can_set_status": self.has_change_permission(request)}
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    # One page (with a required reason) for the buttons and the bulk actions.
+    def _status_page(self, request, users, suspend, error="", reason="", bulk=False):
+        return TemplateResponse(request, "admin/account_status.html", {
+            **self.admin_site.each_context(request), "opts": self.model._meta,
+            "title": ("Suspend " if suspend else "Reactivate ") + ("accounts" if len(users) > 1 else "account"),
+            "users": users, "suspend": suspend, "error": error, "reason": reason, "bulk": bulk,
+            "action": "suspend_selected" if suspend else "reactivate_selected",
+            "cancel_url": (reverse("admin:auth_user_changelist") if bulk or len(users) != 1
+                           else reverse("admin:auth_user_change", args=[users[0].pk])),
+        })
+
+    def _apply(self, request, users, suspend, reason):
+        done, problems = [], []
+        for u in users:
+            try:
+                if accounts.set_status(request.user, u, suspend, reason):
+                    done.append(u.get_username())
+            except accounts.StatusError as e:
+                problems.append(str(e))
+        for p in problems:
+            self.message_user(request, p, messages.ERROR)
+        if done:
+            verb = "Suspended" if suspend else "Reactivated"
+            self.message_user(request, f"{verb}: {', '.join(done)}. The reason is saved in the account history.",
+                              messages.SUCCESS)
+        return done
+
+    def status_view(self, request, pk, change):
+        if not self.has_change_permission(request) or change not in ("suspend", "reactivate"):
+            raise PermissionDenied
+        user = get_object_or_404(User, pk=pk)
+        suspend = change == "suspend"
+        if request.method == "POST":
+            reason = request.POST.get("reason", "").strip()
+            if not reason:
+                return self._status_page(request, [user], suspend, "Please give a reason.")
+            try:
+                accounts.check(request.user, user, suspend)
+            except accounts.StatusError as e:
+                return self._status_page(request, [user], suspend, str(e), reason)
+            self._apply(request, [user], suspend, reason)
+            return redirect("admin:auth_user_change", user.pk)
+        return self._status_page(request, [user], suspend)
+
+    def _bulk(self, request, queryset, suspend):
+        users = [u for u in queryset.order_by("username") if u.is_active == suspend]
+        if not users:
+            self.message_user(request, "Those accounts are already " + ("suspended." if suspend else "active."),
+                              messages.WARNING)
+            return None
+        if request.POST.get("confirm"):
+            reason = request.POST.get("reason", "").strip()
+            if reason:
+                self._apply(request, users, suspend, reason)
+                return None
+            return self._status_page(request, users, suspend, "Please give a reason.", bulk=True)
+        return self._status_page(request, users, suspend, bulk=True)
+
+    @admin.action(description="Suspend selected accounts")
+    def suspend_selected(self, request, queryset):
+        return self._bulk(request, queryset, True)
+
+    @admin.action(description="Reactivate selected accounts")
+    def reactivate_selected(self, request, queryset):
+        return self._bulk(request, queryset, False)
+
+
+@admin.register(AccountStatusChange)
+class AccountStatusChangeAdmin(admin.ModelAdmin):
+    """Read-only audit list of every suspension and reactivation. Nobody can edit or delete it."""
+    list_display = ("changed_at", "username", "full_name", "action", "reason_short", "by")
+    list_filter = ("action", "changed_at")
+    search_fields = ("username", "full_name", "email", "reason")
+    date_hierarchy = "changed_at"
+    fields = ("changed_at", "action", "username", "full_name", "email", "reason", "by")
+    readonly_fields = fields
+
+    @admin.display(description="By")
+    def by(self, obj):
+        return person(obj.changed_by) or "—"
+
+    @admin.display(description="Reason")
+    def reason_short(self, obj):
+        return (obj.reason[:80] + "…") if len(obj.reason) > 80 else obj.reason
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

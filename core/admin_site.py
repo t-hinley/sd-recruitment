@@ -26,6 +26,7 @@ ICONS = {
     "report": '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 17v-3M12 17v-6M15 17v-4"/>',
     "user": '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>',
     "group": '<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6M17 5a3 3 0 0 1 0 6M22 19c0-2.5-1.5-4.5-4-5"/>',
+    "accountstatuschange": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     "site": '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     "alert": '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
     "default": '<rect x="4" y="4" width="16" height="16" rx="3"/>',
@@ -52,7 +53,7 @@ class SDAdminSite(admin.AdminSite):
     MAIN = ["candidateregistration", "vacancyenquiry", "contactenquiry"]
     SHORT = {"candidateregistration": "Candidates", "vacancyenquiry": "Vacancies",
              "contactenquiry": "General"}  # fit the sidebar
-    SETTINGS = ["user", "group"]
+    SETTINGS = ["user", "group", "accountstatuschange"]
 
     # ---- pages -------------------------------------------------------------
     def get_urls(self):

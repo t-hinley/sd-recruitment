@@ -237,3 +237,30 @@ class AuthenticatorDevice(models.Model):
 
     def __str__(self):
         return f"Authenticator app – {self.user.get_username()}"
+
+
+class AccountStatusChange(models.Model):
+    """Permanent history of staff accounts being suspended and reactivated, kept for audits. Rows are never
+    edited or deleted from the admin, and a user with history cannot be deleted (PROTECT)."""
+
+    SUSPENDED, REACTIVATED = "suspended", "reactivated"
+    ACTIONS = [(SUSPENDED, "Suspended"), (REACTIVATED, "Reactivated")]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="status_changes")
+    action = models.CharField(max_length=12, choices=ACTIONS)
+    reason = models.TextField()
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+                                   related_name="status_changes_made")
+    changed_at = models.DateTimeField(auto_now_add=True)
+    # Snapshot of the account at the time, so the record reads correctly even if names change later.
+    username = models.CharField(max_length=150)
+    full_name = models.CharField(max_length=300, blank=True)
+    email = models.EmailField(blank=True)
+
+    class Meta:
+        ordering = ["-changed_at", "-id"]
+        verbose_name = "account history entry"
+        verbose_name_plural = "account history"
+
+    def __str__(self):
+        return f"{self.username} – {self.get_action_display()} {self.changed_at:%d/%m/%Y}"
