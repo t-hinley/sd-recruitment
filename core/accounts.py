@@ -48,8 +48,9 @@ def set_status(actor, user, suspend, reason):
     return True
 
 
-def send_invite(request, user):
-    """Email a new team member a one-time link to choose their password. Returns True if sent."""
+def send_invite(request, user, reset=False):
+    """Email a one-time link to choose a password: to a new team member, or (reset=True) to an existing one
+    whose password an administrator is resetting. Returns True if sent."""
     import logging
 
     from django.conf import settings
@@ -62,16 +63,20 @@ def send_invite(request, user):
     link = request.build_absolute_uri(reverse("password_reset_confirm", kwargs={
         "uidb64": urlsafe_base64_encode(force_bytes(user.pk)), "token": default_token_generator.make_token(user)}))
     name = user.first_name or user.get_username()
+    intro = ("An administrator has sent you a link to set a new password for the SD Recruitment admin. "
+             "Your current password keeps working until you choose a new one." if reset
+             else "You've been given access to the SD Recruitment admin.")
     body = (f"Hi {name},\n\n"
-            f"You've been given access to the SD Recruitment admin.\n\n"
+            f"{intro}\n\n"
             f"Username: {user.get_username()} (you can also sign in with this email address)\n\n"
             f"Choose your password here (the link works once and expires in 3 days):\n{link}\n\n"
             f"Then sign in at {request.build_absolute_uri(reverse('admin:login'))}\n"
             + ("You'll also be asked to set up an authenticator app on your phone the first time.\n"
-               if getattr(settings, "ADMIN_TWO_FACTOR", False) else "")
+               if getattr(settings, "ADMIN_TWO_FACTOR", False) and not reset else "")
             + "\nKind regards,\nSD Recruitment\n")
     try:
-        EmailMessage("Your SD Recruitment admin access", body, settings.DEFAULT_FROM_EMAIL, [user.email]).send()
+        subject = "Set a new password – SD Recruitment admin" if reset else "Your SD Recruitment admin access"
+        EmailMessage(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email]).send()
         return True
     except Exception:
         logging.getLogger("core.security").exception("Could not send the admin invitation to %s", user.email)

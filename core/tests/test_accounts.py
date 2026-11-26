@@ -197,3 +197,27 @@ class SettingsListTests(TestCase):
         self.assertContains(r, 'class="fb-tab is-on')
         r = self.client.get(reverse("admin:core_authenticatordevice_changelist"))
         self.assertContains(r, "Not finished")
+
+
+@override_settings(STORAGES=STATIC, ADMIN_TWO_FACTOR=False)
+class PasswordPanelTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.boss = User.objects.create_superuser("boss", "boss@example.com", PW)
+        self.sam = User.objects.create_user("sam", "sam@example.com", PW, is_staff=True)
+        self.client.force_login(self.boss)
+
+    def test_no_hash_details_and_reset_link_email(self):
+        from django.core import mail
+        url = reverse("admin:auth_user_change", args=[self.sam.pk])
+        r = self.client.get(url)
+        self.assertNotContains(r, "pbkdf2")
+        self.assertNotContains(r, "salt")
+        self.assertContains(r, "Email a reset link")
+        self.assertContains(r, "Set a new password")
+        r = self.client.post(reverse("admin:auth_user_send_reset", args=[self.sam.pk]))
+        self.assertRedirects(r, url)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("/account/reset/", mail.outbox[0].body)
+        self.assertTrue(self.sam.check_password(PW))  # old password still works until they choose a new one
+        self.assertEqual(self.client.get(reverse("admin:auth_user_send_reset", args=[self.sam.pk])).status_code, 403)

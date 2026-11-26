@@ -581,14 +581,33 @@ class UserAdmin(FilterBarMixin, BaseUserAdmin):
     fieldsets = (
         ("Their details", {"fields": ("first_name", "last_name", "email", "username")}),
         ("What they can do", {"fields": ("role",)}),
-        ("Sign-in", {"fields": ("password", "account_status", "two_step", "last_login", "date_joined")}),
+        ("Sign-in", {"fields": ("password_info", "account_status", "two_step", "last_login", "date_joined")}),
     )
     add_fieldsets = (
         ("Their details", {"fields": ("first_name", "last_name", "email", "username")}),
         ("What they can do", {"fields": ("role",)}),
         ("How they get their password", {"fields": ("password_setup", "password1", "password2")}),
     )
-    readonly_fields = ("account_status", "two_step", "last_login", "date_joined")
+    readonly_fields = ("password_info", "account_status", "two_step", "last_login", "date_joined")
+
+    @admin.display(description="Password")
+    def password_info(self, obj):
+        """Plain wording and two actions instead of Django's technical password hash summary."""
+        if not obj.pk:
+            return "-"
+        state = "Set" if obj.has_usable_password() else "Not set"
+        change_url = reverse("admin:auth_user_password_change", args=[obj.pk])
+        if obj.email:
+            email_btn = format_html(
+                '<button type="submit" class="rec-btn" formaction="{}" formmethod="post" formnovalidate '
+                'name="_send_reset">Email a reset link</button>', reverse("admin:auth_user_send_reset", args=[obj.pk]))
+        else:
+            email_btn = format_html('<span class="sdmuted">Add an email address to send a reset link</span>')
+        return format_html(
+            '<div class="sd-pw"><span class="sd-acct sd-acct--plain">{}</span>'
+            '<div class="sd-pw__btns"><a class="rec-btn" href="{}">Set a new password</a>{}</div>'
+            '<small>Passwords are stored scrambled, so nobody (including administrators) can see them. '
+            'A reset link lets the person choose their own.</small></div>', state, change_url, email_btn)
 
     @admin.display(description="Name", ordering="first_name")
     def full_name(self, obj):
@@ -655,7 +674,26 @@ class UserAdmin(FilterBarMixin, BaseUserAdmin):
 
     def get_urls(self):
         return [path("<int:pk>/status/<str:change>/", self.admin_site.admin_view(self.status_view),
-                     name="auth_user_status")] + super().get_urls()
+                     name="auth_user_status"),
+                path("<int:pk>/send-reset/", self.admin_site.admin_view(self.send_reset_view),
+                     name="auth_user_send_reset")] + super().get_urls()
+
+    def send_reset_view(self, request, pk):
+        from django.contrib.admin.models import CHANGE, LogEntry
+        if request.method != "POST" or not self.has_change_permission(request):
+            raise PermissionDenied
+        user = get_object_or_404(User, pk=pk)
+        if not user.email:
+            self.message_user(request, "This user has no email address.", messages.ERROR)
+        elif accounts.send_invite(request, user, reset=True):
+            LogEntry.objects.log_actions(user_id=request.user.pk, queryset=[user], action_flag=CHANGE,
+                                         single_object=True, change_message="Sent a password reset link.")
+            self.message_user(request, f"A reset link has been emailed to {user.email}. It works once and expires "
+                                       f"in 3 days.", messages.SUCCESS)
+        else:
+            self.message_user(request, "The email couldn't be sent. Check the email settings, or use "
+                                       "'Set a new password' instead.", messages.ERROR)
+        return redirect("admin:auth_user_change", user.pk)
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         extra_context = {**(extra_context or {}), "can_set_status": self.has_change_permission(request)}
