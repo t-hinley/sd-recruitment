@@ -8,3 +8,9 @@ class CoreConfig(AppConfig):
 
     def ready(self):
         from . import signals  # noqa: F401  (connects the login signals)
+        from django.contrib.auth import get_user_model
+        from . import random_ids
+        from .models import (AccountStatusChange, AuthenticatorDevice, CandidateRegistration, ContactEnquiry,
+                             VacancyEnquiry)
+        random_ids.connect([CandidateRegistration, VacancyEnquiry, ContactEnquiry, get_user_model(),
+                            AccountStatusChange, AuthenticatorDevice])
