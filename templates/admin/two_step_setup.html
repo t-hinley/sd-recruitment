@@ -1,0 +1,23 @@
+{% extends "auth_base.html" %}
+{% block title %}Set up two-step login{% endblock %}
+{% block heading %}Set up two-step login{% endblock %}
+{% block subheading %}For extra security, signing in needs a code from an authenticator app on your phone. You only set this up once.{% endblock %}
+{% block cardbody %}
+<ol class="authsteps">
+  <li>Install an authenticator app, such as Google Authenticator, Microsoft Authenticator or Authy.</li>
+  <li>In the app, add an account and scan this QR code:
+    <div class="authqr">{{ qr_svg|safe }}</div>
+    <details class="authkey"><summary>Can't scan it? Enter this key instead</summary>
+      <p>Account: {{ account }}<br>Key: <code>{{ secret }}</code><br>Type: time-based</p></details>
+  </li>
+  <li>Enter the 6-digit code the app shows:</li>
+</ol>
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if error %}<div class="autherr" role="alert">{{ error }}</div>{% endif %}
+  <label for="id_code">6-digit code</label>
+  <input type="text" name="code" id="id_code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" placeholder="123 456" required>
+  <button class="authbtn" type="submit"><span aria-hidden="true">&rarr;</span> Turn on and sign in</button>
+</form>
+<p class="authlinks"><a href="{% url 'admin:login' %}">Back to log in</a></p>
+{% endblock %}

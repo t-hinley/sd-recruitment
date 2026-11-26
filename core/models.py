@@ -218,3 +218,22 @@ class ContactEnquiry(FollowUp):
     def __str__(self):
         return f"{self.name} – {self.get_enquirer_type_display()}"
 
+
+
+class AuthenticatorDevice(models.Model):
+    """A staff member's authenticator app, for two-step admin sign-in. Deleting it makes them set up the app
+    again at their next sign-in (e.g. after losing their phone)."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="authenticator")
+    secret = models.CharField(max_length=64, editable=False)
+    confirmed = models.BooleanField("Set up", default=False)
+    last_used_step = models.BigIntegerField(default=-1, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField("Set up on", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "authenticator app"
+        verbose_name_plural = "authenticator apps"
+
+    def __str__(self):
+        return f"Authenticator app – {self.user.get_username()}"

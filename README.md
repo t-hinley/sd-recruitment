@@ -73,6 +73,10 @@ The admin has the same design as the other SD admins. It includes:
 - **Jobs from Manatal (careers-page.com):** jobs the client posts on their Manatal careers page show automatically under "Roles we're recruiting for" on the Candidates page (pinned jobs first). Each has a **View & Apply** button that opens the job on the client's careers page (https://sd-recruitment.careers-page.com) in a new tab. The list refreshes every 15 minutes (`MANATAL_CACHE_MINUTES`); if careers-page.com is unreachable, the last list is shown. Set the careers page with `MANATAL_CAREERS_PAGE_URL` (default `https://sd-recruitment.careers-page.com`). Code: `core/careers_feed.py`.
 - **Airtable status** on each vacancy and candidate (Sent, Failed or Not set up), with a *send again* action.
 - **Reports:** CSV (every field, opens in Excel) or PDF (main fields, ready to print or share) for administrators, for any date range.
+- **Sign-in:** username **or** email address. **Two-step login** (`ADMIN_TWO_FACTOR=True` in `.env`): after the
+  password, every sign-in needs a 6-digit code from an authenticator app (Google/Microsoft Authenticator, Authy);
+  people scan a QR code at their first sign-in. Lost phone: delete their entry under **Authenticator apps**
+  (administrators) or run `manage.py reset_two_step USERNAME_OR_EMAIL`; they set it up again at next sign-in.
 - **Roles:** *Administrators* have full access. *Staff* (the "Staff" group) can work on records,
   but can't delete records, export reports or manage users.
 - Email notifications for each new submission. CVs are never emailed.

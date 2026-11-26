@@ -19,8 +19,10 @@ def client_ip(request):
 
 
 def _keys(request, username):
+    from .auth_backends import find_user
     ip = client_ip(request)
-    username = (username or "")[:150].lower()
+    user = find_user(username)  # username or email -> the same account, so both count together
+    username = (user.get_username() if user else (username or ""))[:150].lower()
     return f"login-ip:{ip}", f"login-user:{ip}:{username}"
 
 

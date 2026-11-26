@@ -161,6 +161,10 @@ LOGIN_FAIL_WINDOW = 15 * 60
 LOGIN_FAIL_LIMIT_IP = 20
 LOGIN_FAIL_LIMIT_USER = 5
 LOGIN_URL = "admin:login"
+# Admin sign-in accepts a username or an email address (core/auth_backends.py).
+AUTHENTICATION_BACKENDS = ["core.auth_backends.UsernameOrEmailBackend"]
+# Two-step admin sign-in with an authenticator app (core/two_step.py). True = every sign-in needs a code.
+ADMIN_TWO_FACTOR = env_bool("ADMIN_TWO_FACTOR", False)
 LOGIN_REDIRECT_URL = "admin:index"
 # Public forms: successful submissions allowed per hour from one connection (each form counted separately).
 FORM_LIMIT_PER_HOUR = int(os.environ.get("FORM_LIMIT_PER_HOUR", "10"))

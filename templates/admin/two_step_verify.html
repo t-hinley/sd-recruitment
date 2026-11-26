@@ -1,0 +1,15 @@
+{% extends "auth_base.html" %}
+{% block title %}Two-step login{% endblock %}
+{% block heading %}Enter your code{% endblock %}
+{% block subheading %}Open your authenticator app and enter the 6-digit code for SD Recruitment ({{ account }}).{% endblock %}
+{% block cardbody %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if error %}<div class="autherr" role="alert">{{ error }}</div>{% endif %}
+  <label for="id_code">6-digit code</label>
+  <input type="text" name="code" id="id_code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" placeholder="123 456" autofocus required>
+  <button class="authbtn" type="submit"><span aria-hidden="true">&rarr;</span> Verify</button>
+</form>
+<p class="authlinks"><a href="{% url 'admin:login' %}">Back to log in</a></p>
+<p class="authnote">Lost your phone? Ask an administrator to reset your two-step login.</p>
+{% endblock %}

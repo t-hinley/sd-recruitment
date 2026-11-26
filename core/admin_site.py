@@ -60,7 +60,20 @@ class SDAdminSite(admin.AdminSite):
         from .views import resume_download
         return [path("profile/", self.admin_view(self.profile_view), name="profile"),
                 path("reports/", self.admin_view(self.reports_view), name="reports"),
-                path("cv/<int:pk>/", self.admin_view(resume_download), name="resume_download")] + super().get_urls()
+                path("cv/<int:pk>/", self.admin_view(resume_download), name="resume_download"),
+                path("two-step/", self.two_step_verify, name="two_step"),
+                path("two-step/setup/", self.two_step_setup, name="two_step_setup")] + super().get_urls()
+
+    # Two-step sign-in pages (core/two_step.py). Not wrapped in admin_view: the person isn't signed in yet.
+    def two_step_verify(self, request):
+        from django.views.decorators.cache import never_cache
+        from . import two_step
+        return never_cache(lambda r: two_step.verify(r, self))(request)
+
+    def two_step_setup(self, request):
+        from django.views.decorators.cache import never_cache
+        from . import two_step
+        return never_cache(lambda r: two_step.setup(r, self))(request)
 
     def login(self, request, extra_context=None):
         """Pause sign-in after repeated failures, so the admin address cannot be used to guess passwords."""
@@ -71,7 +84,29 @@ class SDAdminSite(admin.AdminSite):
             return render(request, "admin/login.html", {
                 "blocked": "Too many failed sign-in attempts. Please wait 15 minutes and try again.",
                 "site_name": "SD Recruitment"}, status=429)
-        return super().login(request, {"site_name": "SD Recruitment", **(extra_context or {})})
+        from django.conf import settings
+        from . import two_step
+        self.login_form = two_step.AdminLoginForm  # "username or email" wording
+        if not settings.ADMIN_TWO_FACTOR:
+            return super().login(request, {"site_name": "SD Recruitment", **(extra_context or {})})
+        return self._two_step_login(request, {"site_name": "SD Recruitment", **(extra_context or {})})
+
+    def _two_step_login(self, request, extra_context):
+        """Django's admin login, but a correct password leads to the code step instead of signing in."""
+        from django.contrib.auth import REDIRECT_FIELD_NAME
+        from django.http import HttpResponseRedirect
+        from . import two_step
+        if request.method == "GET" and self.has_permission(request):
+            return HttpResponseRedirect(reverse("admin:index", current_app=self.name))
+        context = {**self.each_context(request), "title": "Log in", "subtitle": None,
+                   "app_path": request.get_full_path(), "username": request.user.get_username()}
+        if REDIRECT_FIELD_NAME not in request.GET and REDIRECT_FIELD_NAME not in request.POST:
+            context[REDIRECT_FIELD_NAME] = reverse("admin:index", current_app=self.name)
+        context.update(extra_context)
+        request.current_app = self.name
+        return two_step.TwoStepLoginView.as_view(
+            extra_context=context, authentication_form=two_step.AdminLoginForm,
+            template_name="admin/login.html")(request)
 
     def logout(self, request, extra_context=None):
         """After Log out, return to the admin log in page instead of a separate 'logged out' page."""
@@ -93,6 +128,8 @@ class SDAdminSite(admin.AdminSite):
             "p_active": user.is_active,
             "p_role": "Administrator" if user.is_superuser else "Staff",
             "p_last_login": user.last_login,
+            "p_two_step_on": __import__("django.conf").conf.settings.ADMIN_TWO_FACTOR,
+            "p_authenticator": getattr(user, "authenticator", None),
         })
 
     def reports_view(self, request):

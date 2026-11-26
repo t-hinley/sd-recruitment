@@ -200,6 +200,16 @@ tar czf ~/sdrecruitment-backup-$(date +%F).tar.gz -C /srv/sdrecruitment db.sqlit
    */15 * * * * cd /srv/sdrecruitment && .venv/bin/python manage.py sync_airtable >/dev/null 2>&1
    ```
 
+## Step 10c – Two-step login for the admin (recommended)
+
+1. Make sure every admin user has their email address filled in (Users) – they can then sign in with it.
+2. `nano /srv/sdrecruitment/.env` and add `ADMIN_TWO_FACTOR=True`, then `sudo systemctl restart sdrecruitment`.
+3. At their next sign-in, each person scans a QR code with an authenticator app (Google Authenticator,
+   Microsoft Authenticator or Authy) and enters the code. From then on every sign-in asks for a code.
+4. Lost phone: an administrator deletes the person's entry under **Authenticator apps**, or on the server:
+   `cd /srv/sdrecruitment && .venv/bin/python manage.py reset_two_step USERNAME_OR_EMAIL`.
+   If the only administrator loses their phone, use that command.
+
 ## Step 11 – Final checks
 
 - [ ] https://sd-recruitment.com opens with a padlock on desktop and phone.

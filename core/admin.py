@@ -11,7 +11,8 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from . import airtable
-from .models import AIRTABLE_FAILED, AIRTABLE_SENT, CandidateRegistration, ContactEnquiry, VacancyEnquiry
+from .models import (AIRTABLE_FAILED, AIRTABLE_SENT, AuthenticatorDevice, CandidateRegistration, ContactEnquiry,
+                     VacancyEnquiry)
 
 
 def person(user):
@@ -250,3 +251,29 @@ class ContactEnquiryAdmin(EnquiryAdmin):
     @admin.display(description="Message")
     def message_preview(self, obj):
         return (obj.message[:80] + "…") if len(obj.message) > 80 else obj.message
+
+
+@admin.register(AuthenticatorDevice)
+class AuthenticatorDeviceAdmin(admin.ModelAdmin):
+    """Administrators only. Delete a user's authenticator app (e.g. lost phone) and they set it up again at
+    their next sign-in. The secret is never shown."""
+    list_display = ("user", "confirmed", "confirmed_at", "created_at")
+    list_filter = ("confirmed",)
+    search_fields = ("user__username", "user__email", "user__first_name", "user__last_name")
+    fields = ("user", "confirmed", "confirmed_at", "created_at")
+    readonly_fields = fields
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser

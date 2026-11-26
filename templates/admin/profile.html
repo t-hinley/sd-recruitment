@@ -24,6 +24,10 @@
         <div><b>Password</b><small>{% if p_last_login %}Last signed in {% if p_last_login|timesince == "0 minutes" %}just now{% else %}{{ p_last_login|timesince }} ago{% endif %}{% else %}Keep your password private and at least 12 characters long{% endif %}</small></div>
         <a href="{% url 'admin:password_change' %}">Change password</a>
       </div>
+      <div class="pfrow">
+        <div><b>Two-step login</b><small>{% if p_authenticator and p_authenticator.confirmed %}Authenticator app set up on {{ p_authenticator.confirmed_at|date:"j F Y" }}{% elif p_two_step_on %}You'll set up an authenticator app at your next sign-in{% else %}Not turned on for this website{% endif %}</small></div>
+        <span>{% if p_authenticator and p_authenticator.confirmed %}On{% else %}Off{% endif %}</span>
+      </div>
     </div>
   </section>
 </div>
