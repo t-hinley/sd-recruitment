@@ -236,3 +236,17 @@
     if (document.readyState === "complete") place(); else window.addEventListener("load", place);
   }
 })();
+
+/* After a form is sent: count down, then return to an empty form by itself ("Go now" skips the wait). */
+(function () {
+  var box = document.querySelector(".form-success[data-redirect]");
+  if (!box) return;
+  var url = box.getAttribute("data-redirect"), left = parseInt(box.getAttribute("data-seconds"), 10) || 6;
+  var out = box.querySelector("[data-countdown]"), bar = box.querySelector(".form-success__bar i");
+  if (bar) { bar.style.transitionDuration = left + "s"; requestAnimationFrame(function () { requestAnimationFrame(function () { bar.style.width = "0%"; }); }); }
+  var timer = setInterval(function () {
+    left -= 1;
+    if (out) out.textContent = Math.max(left, 0);
+    if (left <= 0) { clearInterval(timer); window.location.href = url; }
+  }, 1000);
+})();

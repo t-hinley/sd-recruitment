@@ -1,6 +1,7 @@
-<div class="form-success" role="status" tabindex="-1" data-focus>
+<div class="form-success" role="status" tabindex="-1" data-focus data-redirect="{{ again_url }}" data-seconds="6">
   <span class="form-success__icon"><svg class="icon"><use href="#i-check"/></svg></span>
   <h3>{{ title }}</h3>
   {% for message in messages %}<p>{{ message }}</p>{% empty %}<p>Thank you. We'll be in touch soon.</p>{% endfor %}
-  <a class="btn btn--ghost" href="{{ again_url }}">{{ again_label }}</a>
+  <p class="form-success__redirect">Returning to the form in <b data-countdown>6</b> seconds&hellip; <a href="{{ again_url }}">Go now</a></p>
+  <span class="form-success__bar" aria-hidden="true"><i></i></span>
 </div>
