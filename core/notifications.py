@@ -135,8 +135,6 @@ def send_candidate_confirmation(reg, request=None):
         "Our team will review your details and contact you to discuss your goals and any suitable opportunities"
         " or services. Registering does not guarantee an interview, job offer or placement.",
         "",
-        "If anything above needs correcting, just reply to this email.",
-        "",
         "Kind regards,",
         BUSINESS["name"],
     ]
