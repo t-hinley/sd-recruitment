@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_GET, require_POST
 
-from . import airtable, careers_feed, content
+from . import airtable, careers_feed, content, security
 from .forms import CandidateForm, ContactForm, VacancyForm
 from .models import RESUME_PACKAGES, CandidateRegistration
 from .notifications import send_candidate_confirmation, send_enquiry_notification
@@ -44,10 +44,15 @@ def employers(request):
     industry = INDUSTRY_PRESELECT.get(request.GET.get("industry", ""))
     if industry:
         form = VacancyForm(initial={"industry": industry})
+    status = 200
     if request.method == "POST":
         form = VacancyForm(request.POST)
-        if form.is_valid():
+        if form.is_valid() and not security.submission_allowed(request, "vacancy"):
+            form.add_error(None, security.FORM_LIMIT_MESSAGE)
+            status = 429
+        elif form.is_valid():
             enquiry = form.save()
+            security.record_submission(request, "vacancy")
             airtable.push(enquiry)
             send_enquiry_notification(enquiry, request)
             messages.success(request, "Thank you – your vacancy has been received. "
@@ -59,7 +64,7 @@ def employers(request):
         "benefits": content.EMPLOYER_BENEFITS,
         "industries": content.INDUSTRIES,
         "process": content.EMPLOYER_PROCESS,
-    })
+    }, status=status)
 
 
 def candidates(request):
@@ -74,10 +79,15 @@ def candidates(request):
         initial.update(support=["resume"], resume_package=package)
     form = CandidateForm(initial=initial or None)
 
+    status = 200
     if request.method == "POST":
         form = CandidateForm(request.POST, request.FILES)
-        if form.is_valid():
+        if form.is_valid() and not security.submission_allowed(request, "candidate"):
+            form.add_error(None, security.FORM_LIMIT_MESSAGE)
+            status = 429
+        elif form.is_valid():
             registration = form.save()
+            security.record_submission(request, "candidate")
             airtable.push(registration)
             send_enquiry_notification(registration, request)
             send_candidate_confirmation(registration, request)
@@ -95,19 +105,24 @@ def candidates(request):
         "benefits": content.CANDIDATE_BENEFITS,
         "services": content.CAREER_SERVICES,
         "process": content.CANDIDATE_PROCESS,
-    })
+    }, status=status)
 
 
 def contact(request):
     form = ContactForm()
+    status = 200
     if request.method == "POST":
         form = ContactForm(request.POST)
-        if form.is_valid():
+        if form.is_valid() and not security.submission_allowed(request, "contact"):
+            form.add_error(None, security.FORM_LIMIT_MESSAGE)
+            status = 429
+        elif form.is_valid():
             enquiry = form.save()
+            security.record_submission(request, "contact")
             send_enquiry_notification(enquiry, request)
             messages.success(request, "Thank you – your message has been sent. We'll get back to you soon.")
             return redirect(reverse("core:contact") + "?sent=1#enquiry")
-    return render(request, "core/contact.html", {"form": form, "sent": request.GET.get("sent")})
+    return render(request, "core/contact.html", {"form": form, "sent": request.GET.get("sent")}, status=status)
 
 
 def career_services(request):

@@ -41,6 +41,9 @@ SECRET_KEY = os.environ.get(
     "django-insecure-dev-only-change-me-in-production",
 )
 DEBUG = env_bool("DJANGO_DEBUG", True)
+if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured("Set DJANGO_SECRET_KEY in .env: the live site must not use the development key.")
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
@@ -158,6 +161,11 @@ LOGIN_FAIL_WINDOW = 15 * 60
 LOGIN_FAIL_LIMIT_IP = 20
 LOGIN_FAIL_LIMIT_USER = 5
 LOGIN_URL = "admin:login"
+LOGIN_REDIRECT_URL = "admin:index"
+# Public forms: successful submissions allowed per hour from one connection (each form counted separately).
+FORM_LIMIT_PER_HOUR = int(os.environ.get("FORM_LIMIT_PER_HOUR", "10"))
+if len(sys.argv) > 1 and sys.argv[1] == "test":
+    FORM_LIMIT_PER_HOUR = 1000  # tests post many forms from one address; core/tests/test_security.py tests the limit
 # True when the site runs behind Nginx on a VPS (see DEPLOY_VPS.md); not needed on cPanel.
 BEHIND_PROXY = env_bool("DJANGO_BEHIND_PROXY", False)
 

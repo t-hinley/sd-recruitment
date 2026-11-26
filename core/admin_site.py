@@ -67,6 +67,7 @@ class SDAdminSite(admin.AdminSite):
         from . import security
         if request.method == "POST" and security.login_blocked(request):
             from django.shortcuts import render
+            security.logger.warning("Admin sign-in paused for %s (too many failures)", security.client_ip(request))
             return render(request, "admin/login.html", {
                 "blocked": "Too many failed sign-in attempts. Please wait 15 minutes and try again.",
                 "site_name": "SD Recruitment"}, status=429)
