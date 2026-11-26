@@ -261,3 +261,26 @@ class ResumeAccessTests(TestCase):
         self.assertTrue(storage.exists(name))
         CandidateRegistration.objects.filter(pk=self.cand.pk).delete()  # bulk delete path
         self.assertFalse(storage.exists(name))
+
+
+class RecordPageTests(TestCase):
+    def test_record_page_layout(self):
+        from django.contrib.auth.models import User
+        from django.test import override_settings
+        from core.models import ContactEnquiry
+        boss = User.objects.create_superuser("recboss", "rb@example.com", "a-strong-pass-123")
+        e = ContactEnquiry.objects.create(name="Sam Lee", email="sam@example.com", phone="0400 111 222", message="Hi")
+        self.client.force_login(boss)
+        with override_settings(STORAGES={
+                "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+                "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}):
+            url = reverse("admin:core_contactenquiry_change", args=[e.pk])
+            r = self.client.get(url)
+            self.assertContains(r, 'class="rec-head"')
+            self.assertContains(r, 'href="mailto:sam@example.com"')
+            self.assertContains(r, 'href="tel:0400111222"')
+            r = self.client.post(url, {"status": "contacted", "assigned_to": boss.pk, "notes": "Called back",
+                                       "_continue": "1"})
+            self.assertRedirects(r, url)
+        e.refresh_from_db()
+        self.assertEqual((e.status, e.assigned_to, e.notes), ("contacted", boss, "Called back"))

@@ -1,0 +1,92 @@
+{% extends "admin/change_form.html" %}
+{% load admin_urls %}
+{% block content_title %}{% endblock %}
+{% block content_subtitle %}{% endblock %}
+{% block object-tools %}{% endblock %}
+
+{% block field_sets %}
+{% if rec %}
+<div class="rec">
+  <header class="rec-head">
+    <div class="rec-avatar" aria-hidden="true">{{ rec.initials }}</div>
+    <div class="rec-id">
+      <p class="rec-kind">{{ rec.kind }}</p>
+      <h1>{{ rec.title }}</h1>
+      {% if rec.subtitle %}<p class="rec-sub">{{ rec.subtitle }}</p>{% endif %}
+      <div class="rec-meta">
+        <span class="sdchip st-{{ rec.status }}">{{ rec.status_label }}</span>
+        <span>Received {{ rec.received|date:"j M Y, g:i A" }}</span>
+        <span>{% if rec.assigned %}Assigned to <b>{{ rec.assigned }}</b>{% else %}<b class="rec-warn">Unassigned</b>{% endif %}</span>
+      </div>
+    </div>
+    <div class="rec-actions">
+      {% if rec.email %}<a class="rec-btn" href="mailto:{{ rec.email }}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5L12 13l8.5-6.5"/></svg>Email</a>{% endif %}
+      {% if rec.phone %}<a class="rec-btn" href="tel:{{ rec.tel }}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Call</a>{% endif %}
+      {% for b in rec.buttons %}<a class="rec-btn rec-btn--primary" href="{{ b.url }}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14"/></svg>{{ b.label }}</a>{% endfor %}
+    </div>
+  </header>
+
+  <div class="rec-grid">
+    <div class="rec-main">
+      {% for fieldset in adminform %}{% if fieldset.name != "Follow-up" and fieldset.name != "Airtable copy" %}
+      <section class="rec-card">
+        <h2>{{ fieldset.name }}</h2>
+        <dl class="rec-list">
+          {% for line in fieldset %}{% for field in line %}
+          <div class="rec-item{% if field.field.name in rec.wide %} rec-item--wide{% endif %}">
+            <dt>{{ field.field.label|capfirst }}</dt>
+            <dd>{{ field.contents|default:"-" }}</dd>
+          </div>
+          {% endfor %}{% endfor %}
+        </dl>
+      </section>
+      {% endif %}{% endfor %}
+    </div>
+
+    <aside class="rec-side">
+      {% for fieldset in adminform %}{% if fieldset.name == "Follow-up" %}
+      <section class="rec-card rec-card--follow">
+        <h2>Follow-up</h2>
+        <p class="rec-hint">{{ fieldset.description }}</p>
+        {% for line in fieldset %}{% for field in line %}
+          {% if field.is_readonly %}
+            <p class="rec-updated">{{ field.field.label }}: {{ field.contents }}</p>
+          {% else %}
+            <div class="rec-field{% if field.field.errors %} has-error{% endif %}">
+              <label for="{{ field.field.id_for_label }}">{{ field.field.label }}</label>
+              {{ field.field }}
+              {{ field.field.errors }}
+              {% if field.field.name == "notes" %}<small>{{ field.field.help_text }}</small>{% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}{% endfor %}
+        {% if has_change_permission %}
+        <div class="rec-save">
+          <button type="submit" name="_continue" class="rec-btn rec-btn--save">Save changes</button>
+          <button type="submit" name="_save" class="rec-btn rec-btn--ghost">Save and back to list</button>
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}{% endfor %}
+
+      {% for fieldset in adminform %}{% if fieldset.name == "Airtable copy" %}
+      <details class="rec-card rec-card--small">
+        <summary>Airtable copy</summary>
+        <dl class="rec-list rec-list--one">
+          {% for line in fieldset %}{% for field in line %}
+          <div class="rec-item"><dt>{{ field.field.label|capfirst }}</dt><dd>{{ field.contents|default:"-" }}</dd></div>
+          {% endfor %}{% endfor %}
+        </dl>
+      </details>
+      {% endif %}{% endfor %}
+
+      <p class="rec-links">
+        <a href="{% url opts|admin_urlname:'history' original.pk|admin_urlquote %}">Change history</a>
+        {% if has_delete_permission %} · <a class="rec-del" href="{% url opts|admin_urlname:'delete' original.pk|admin_urlquote %}">Delete record</a>{% endif %}
+      </p>
+    </aside>
+  </div>
+</div>
+{% else %}{{ block.super }}{% endif %}
+{% endblock %}
+{% block submit_buttons_bottom %}{% if not rec %}{{ block.super }}{% endif %}{% endblock %}

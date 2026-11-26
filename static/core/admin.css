@@ -234,3 +234,75 @@ form .aligned .sd-cards label.sd-card, .sd-cards label.sd-card {
   #content-main fieldset.module.aligned .form-row > div,
   #content-main fieldset.module.aligned .form-row .flex-container { width: auto; max-width: 100%; min-width: 0; }
 }
+
+/* ---- Enquiry record page (candidates, vacancies, general) ---------------- */
+.rec { max-width: 1240px; }
+.rec-head { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; background: #fff; border: 1px solid #E3E8F2;
+  border-radius: 14px; padding: 20px 22px; margin-bottom: 18px; }
+.rec-avatar { width: 56px; height: 56px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: linear-gradient(135deg, #304B98, #1B2A5C); color: #fff; font-weight: 700; font-size: 20px; }
+.rec-id { flex: 1 1 320px; min-width: 0; }
+.rec-kind { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #ED5A2A; }
+.rec-id h1 { margin: 2px 0 2px; font-size: 24px; line-height: 1.2; color: #12305C; overflow-wrap: anywhere; }
+.rec-sub { margin: 0 0 8px; color: #55627D; font-size: 14px; }
+.rec-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 13px; color: #55627D; }
+.rec-meta b { color: #12305C; }
+.rec-meta .rec-warn { color: #C84414; }
+.rec-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rec-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 9px; font-size: 14px;
+  font-weight: 600; text-decoration: none !important; border: 1.5px solid #D5DAE5; background: #fff; color: #304B98 !important;
+  cursor: pointer; line-height: 1.1; font-family: inherit; }
+.rec-btn:hover { border-color: #304B98; }
+.rec-btn--primary, .rec-btn--save { background: #304B98; border-color: #304B98; color: #fff !important; }
+.rec-btn--primary:hover, .rec-btn--save:hover { background: #12305C; border-color: #12305C; }
+.rec-btn--ghost { color: #304B98 !important; }
+.rec-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.rec-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.rec-card { background: #fff; border: 1px solid #E3E8F2; border-radius: 14px; padding: 18px 20px; }
+.rec-card h2 { margin: 0 0 12px; padding: 0; background: none; font-size: 15px; font-weight: 700; color: #12305C;
+  text-transform: none; letter-spacing: 0; }
+.rec-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; margin: 0; }
+.rec-list--one { grid-template-columns: 1fr; }
+.rec-item { min-width: 0; }
+.rec-item--wide { grid-column: 1 / -1; }
+.rec-item dt { margin: 0 0 3px; font-size: 12px; font-weight: 600; color: #6B7690; text-transform: uppercase; letter-spacing: .04em; }
+.rec-item dd { margin: 0; font-size: 15px; color: #1B2A5C; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-line; }
+.rec-item dd a { color: #304B98; }
+.rec-item dd img { vertical-align: middle; }
+.rec-file { display: inline-flex; gap: 12px; align-items: center; padding: 10px 14px; border: 1.5px solid #D5DAE5;
+  border-radius: 10px; text-decoration: none !important; white-space: normal; }
+.rec-file:hover { border-color: #304B98; background: #F6F8FD; }
+.rec-file__ico { width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; background: #FDEEE8; color: #C84414; flex: none; }
+.rec-file b { display: block; color: #1B2A5C; font-size: 14px; }
+.rec-file small { color: #6B7690; font-size: 12px; }
+.rec-side { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; }
+.rec-card--follow { border-top: 4px solid #ED5A2A; }
+.rec-hint { margin: -4px 0 14px; font-size: 13px; color: #6B7690; line-height: 1.45; }
+.rec-field { margin-bottom: 14px; }
+.rec-field label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #12305C; }
+.rec-field select, .rec-field textarea { width: 100% !important; box-sizing: border-box; border: 1px solid #C9CFDB;
+  border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px; background: #fff; }
+.rec-field textarea { min-height: 150px; resize: vertical; }
+.rec-field small { display: block; margin-top: 4px; font-size: 12px; color: #6B7690; }
+.rec-field.has-error select, .rec-field.has-error textarea { border-color: #B3261E; }
+.rec-updated { margin: 0 0 14px; font-size: 12px; color: #6B7690; }
+.rec-save { display: flex; flex-direction: column; gap: 8px; }
+.rec-save .rec-btn { justify-content: center; width: 100%; padding: 11px 14px; }
+.rec-card--small { padding: 12px 16px; }
+.rec-card--small summary { cursor: pointer; font-weight: 600; color: #12305C; font-size: 14px; }
+.rec-card--small[open] summary { margin-bottom: 12px; }
+.rec-links { margin: 0; text-align: center; font-size: 13px; }
+.rec-links a { color: #304B98; }
+.rec-links .rec-del { color: #B3261E; }
+@media (max-width: 1024px) {
+  .rec-grid { grid-template-columns: 1fr; }
+  .rec-side { position: static; }
+}
+@media (max-width: 640px) {
+  .rec-head { padding: 16px; }
+  .rec-list { grid-template-columns: 1fr; }
+  .rec-actions { width: 100%; }
+  .rec-actions .rec-btn { flex: 1; justify-content: center; }
+}
+.rec-field select { height: auto !important; min-height: 40px; line-height: 1.3; padding: 8px 10px !important; }
+.rec-btn { white-space: nowrap; }

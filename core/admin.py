@@ -43,7 +43,7 @@ class AssignedFilter(admin.SimpleListFilter):
 
 FOLLOW_UP = ("Follow-up", {
     "fields": ("status", "assigned_to", "notes", "updated_at"),
-    "description": "Only these fields can be changed. The details above are exactly what the visitor sent.",
+    "description": "Only these can be changed. The details on the left are exactly what the visitor sent.",
 })
 
 
@@ -56,6 +56,8 @@ SYNC_FIELDS = ("airtable_badge", "airtable_synced_at", "airtable_id", "airtable_
 
 
 class EnquiryAdmin(admin.ModelAdmin):
+    change_form_template = "admin/enquiry_change_form.html"
+    wide_fields = ()  # long text shown full width on the record page
     list_editable = ("status",)
     list_select_related = ("assigned_to",)
     date_hierarchy = "created_at"
@@ -111,6 +113,32 @@ class EnquiryAdmin(admin.ModelAdmin):
     @admin.display(description="Received")
     def received_full(self, obj):
         return timezone.localtime(obj.created_at).strftime("%d %b %Y, %I:%M %p")
+
+    # ---- record page ---------------------------------------------------------------
+    kind = "Enquiry"
+
+    def record_title(self, obj):
+        return str(obj)
+
+    def record_subtitle(self, obj):
+        return ""
+
+    def record_extra_buttons(self, obj):
+        return []
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        obj = self.get_object(request, admin.utils.unquote(object_id))
+        if obj is not None:
+            title = self.record_title(obj)
+            extra_context = {**(extra_context or {}), "rec": {
+                "kind": self.kind, "title": title, "subtitle": self.record_subtitle(obj),
+                "initials": "".join(w[0] for w in title.split()[:2]).upper() or "?",
+                "status": obj.status, "status_label": obj.get_status_display(),
+                "received": timezone.localtime(obj.created_at), "assigned": person(obj.assigned_to),
+                "email": obj.email, "phone": obj.phone, "tel": (obj.phone or "").replace(" ", ""),
+                "buttons": self.record_extra_buttons(obj), "wide": self.wide_fields,
+            }}
+        return super().change_view(request, object_id, form_url, extra_context)
 
     # ---- bulk actions --------------------------------------------------------------
     @admin.action(description="Assign selected to me")
@@ -179,12 +207,21 @@ class VacancyEnquiryAdmin(AirtableAdminMixin, EnquiryAdmin):
                         "employment_type_display", "positions_count", "location", "details", "consent",
                         "received_full")
     fieldsets = (
-        ("Vacancy details", {"fields": (("company", "industry"), ("contact_name", "phone_link"), "email_link",
-                                        ("position", "positions_count"), "employment_type_display", "location",
-                                        "details", ("consent", "received_full"))}),
+        ("Employer", {"fields": ("company", "industry", "contact_name", "phone_link", "email_link")}),
+        ("The role", {"fields": ("position", "positions_count", "employment_type_display", "location",
+                                 "details")}),
+        ("Submission", {"fields": ("received_full", "consent")}),
         FOLLOW_UP,
         AIRTABLE,
     )
+    wide_fields = ("details",)
+    kind = "Vacancy"
+
+    def record_title(self, obj):
+        return obj.company
+
+    def record_subtitle(self, obj):
+        return " · ".join(x for x in (obj.position, obj.industry, obj.location) if x)
 
     @admin.display(description="Employment type")
     def employment_type_display(self, obj):
@@ -205,14 +242,28 @@ class CandidateRegistrationAdmin(AirtableAdminMixin, EnquiryAdmin):
                         "support_summary", "package_display", "preferred_times", "resume_link", "consent",
                         "received_full")
     fieldsets = (
-        ("Candidate details", {"fields": ("full_name", ("phone_link", "email_link"), ("location", "visa_type"),
-                                          ("preferred_location", "industry"), "position_sought",
-                                          ("employment_type_display", "experience"), "support_summary",
-                                          ("package_display", "preferred_times"),
-                                          "resume_link", ("consent", "received_full"))}),
+        ("Contact", {"fields": ("full_name", "phone_link", "email_link", "location", "visa_type")}),
+        ("What they're looking for", {"fields": ("position_sought", "industry", "preferred_location",
+                                                 "employment_type_display", "experience")}),
+        ("Services requested", {"fields": ("support_summary", "package_display", "preferred_times")}),
+        ("Resume and submission", {"fields": ("resume_link", "received_full", "consent")}),
         FOLLOW_UP,
         AIRTABLE,
     )
+    wide_fields = ("position_sought", "resume_link")
+    kind = "Candidate"
+
+    def record_title(self, obj):
+        return obj.full_name
+
+    def record_subtitle(self, obj):
+        first = (obj.position_sought or "").splitlines()[0][:60] if obj.position_sought else ""
+        return " · ".join(x for x in (first, obj.industry, obj.preferred_location) if x)
+
+    def record_extra_buttons(self, obj):
+        if obj.resume:
+            return [{"label": "Download CV", "url": reverse("admin:resume_download", args=[obj.pk]), "icon": "cv"}]
+        return []
 
     @admin.display(description="Employment type")
     def employment_type_display(self, obj):
@@ -234,7 +285,10 @@ class CandidateRegistrationAdmin(AirtableAdminMixin, EnquiryAdmin):
     def resume_link(self, obj):
         if not obj.resume:
             return format_html('<span class="sdmuted">Not provided</span>')
-        return format_html('<a class="button" href="{}">Download CV</a> <span class="sdmuted">{}</span>',
+        return format_html('<a class="rec-file" href="{}"><span class="rec-file__ico" aria-hidden="true">'
+                           '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" '
+                           'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/>'
+                           '<path d="M14 3v5h5"/></svg></span><span><b>{}</b><small>Click to download</small></span></a>',
                            reverse("admin:resume_download", args=[obj.pk]), obj.resume_name)
 
 
@@ -245,9 +299,15 @@ class ContactEnquiryAdmin(EnquiryAdmin):
     search_fields = ("name", "email", "phone", "message", "notes")
     submitted_fields = ("name", "email_link", "phone_link", "message", "received_full")
     fieldsets = (
-        ("Enquiry", {"fields": ("name", ("email_link", "phone_link"), "message", "received_full")}),
+        ("Contact", {"fields": ("name", "email_link", "phone_link", "received_full")}),
+        ("Message", {"fields": ("message",)}),
         FOLLOW_UP,
     )
+    wide_fields = ("message",)
+    kind = "General enquiry"
+
+    def record_title(self, obj):
+        return obj.name
 
     @admin.display(description="Message")
     def message_preview(self, obj):
