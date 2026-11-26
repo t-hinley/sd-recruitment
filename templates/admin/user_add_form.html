@@ -1,0 +1,20 @@
+{% extends "admin/change_form.html" %}
+{% block form_top %}
+  <p class="sd-acct-intro">Add someone who needs to use this admin. Choose what they can do, then either email them
+    a link to choose their own password or set one for them.</p>
+{% endblock %}
+{% block admin_change_form_document_ready %}{{ block.super }}
+<script>
+(function () {
+  function sync() {
+    var chosen = document.querySelector('input[name="password_setup"]:checked');
+    var show = chosen && chosen.value === "set";
+    document.querySelectorAll(".field-password1, .field-password2").forEach(function (row) {
+      row.style.display = show ? "" : "none";
+    });
+  }
+  document.querySelectorAll('input[name="password_setup"]').forEach(function (r) { r.addEventListener("change", sync); });
+  sync();
+})();
+</script>
+{% endblock %}

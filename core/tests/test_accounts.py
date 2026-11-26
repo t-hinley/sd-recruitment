@@ -110,3 +110,60 @@ class SuspendTests(TestCase):
         self.assertIn(r.status_code, (302, 403))
         self.boss.refresh_from_db()
         self.assertTrue(self.boss.is_active)
+
+
+@override_settings(STORAGES=STATIC, ADMIN_TWO_FACTOR=False)
+class TeamMemberFormTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.boss = User.objects.create_superuser("boss", "boss@example.com", PW)
+        self.client.force_login(self.boss)
+        self.add_url = reverse("admin:auth_user_add")
+
+    def test_add_page_is_simple(self):
+        r = self.client.get(self.add_url)
+        self.assertContains(r, "Email them a link")
+        self.assertContains(r, "Administrator")
+        self.assertNotContains(r, "user_permissions")
+        self.assertNotContains(r, "Superuser status")
+
+    def test_add_staff_with_email_link(self):
+        from django.core import mail
+        r = self.client.post(self.add_url, {"first_name": "Amy", "last_name": "Ng", "email": "Amy.Ng@example.com",
+                                            "username": "", "role": "staff", "password_setup": "email"})
+        self.assertEqual(r.status_code, 302)
+        amy = User.objects.get(email="Amy.Ng@example.com")
+        self.assertEqual(amy.username, "amy.ng")
+        self.assertTrue(amy.is_staff and not amy.is_superuser)
+        self.assertEqual(list(amy.groups.values_list("name", flat=True)), ["Staff"])
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("/account/reset/", mail.outbox[0].body)
+        self.assertIn("Username: amy.ng", mail.outbox[0].body)
+
+    def test_add_admin_with_password(self):
+        r = self.client.post(self.add_url, {"first_name": "Al", "last_name": "Bo", "email": "al@example.com",
+                                            "username": "al", "role": "admin", "password_setup": "set",
+                                            "password1": "Another-pass-889", "password2": "Another-pass-889"})
+        self.assertEqual(r.status_code, 302)
+        al = User.objects.get(username="al")
+        self.assertTrue(al.is_superuser and al.check_password("Another-pass-889"))
+
+    def test_add_errors(self):
+        r = self.client.post(self.add_url, {"first_name": "X", "last_name": "Y", "email": "BOSS@example.com",
+                                            "role": "staff", "password_setup": "set", "password1": "a"})
+        self.assertContains(r, "Another user already has this email address")
+        self.assertContains(r, "match")
+
+    def test_change_role_and_last_admin_guard(self):
+        sam = User.objects.create_user("sam", "sam@example.com", PW, is_staff=True)
+        url = reverse("admin:auth_user_change", args=[sam.pk])
+        data = {"username": "sam", "first_name": "Sam", "last_name": "Lee", "email": "sam@example.com",
+                "role": "admin", "status_changes-TOTAL_FORMS": 0, "status_changes-INITIAL_FORMS": 0}
+        self.assertEqual(self.client.post(url, data).status_code, 302)
+        sam.refresh_from_db()
+        self.assertTrue(sam.is_superuser)
+        # Boss can't change their own role (field disabled), so they stay an administrator.
+        own = dict(data, username="boss", email="boss@example.com", role="staff")
+        self.client.post(reverse("admin:auth_user_change", args=[self.boss.pk]), own)
+        self.boss.refresh_from_db()
+        self.assertTrue(self.boss.is_superuser)

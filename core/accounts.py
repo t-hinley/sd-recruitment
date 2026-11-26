@@ -46,3 +46,33 @@ def set_status(actor, user, suspend, reason):
         user_id=actor.pk, queryset=[user], action_flag=CHANGE, single_object=True,
         change_message=f"{entry.get_action_display()} account. Reason: {reason}")
     return True
+
+
+def send_invite(request, user):
+    """Email a new team member a one-time link to choose their password. Returns True if sent."""
+    import logging
+
+    from django.conf import settings
+    from django.contrib.auth.tokens import default_token_generator
+    from django.core.mail import EmailMessage
+    from django.urls import reverse
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
+    link = request.build_absolute_uri(reverse("password_reset_confirm", kwargs={
+        "uidb64": urlsafe_base64_encode(force_bytes(user.pk)), "token": default_token_generator.make_token(user)}))
+    name = user.first_name or user.get_username()
+    body = (f"Hi {name},\n\n"
+            f"You've been given access to the SD Recruitment admin.\n\n"
+            f"Username: {user.get_username()} (you can also sign in with this email address)\n\n"
+            f"Choose your password here (the link works once and expires in 3 days):\n{link}\n\n"
+            f"Then sign in at {request.build_absolute_uri(reverse('admin:login'))}\n"
+            + ("You'll also be asked to set up an authenticator app on your phone the first time.\n"
+               if getattr(settings, "ADMIN_TWO_FACTOR", False) else "")
+            + "\nKind regards,\nSD Recruitment\n")
+    try:
+        EmailMessage("Your SD Recruitment admin access", body, settings.DEFAULT_FROM_EMAIL, [user.email]).send()
+        return True
+    except Exception:
+        logging.getLogger("core.security").exception("Could not send the admin invitation to %s", user.email)
+        return False

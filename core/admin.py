@@ -289,7 +289,7 @@ from django.shortcuts import get_object_or_404, redirect  # noqa: E402
 from django.template.response import TemplateResponse  # noqa: E402
 from django.urls import path  # noqa: E402
 
-from . import accounts  # noqa: E402
+from . import accounts, user_forms  # noqa: E402
 from .models import AccountStatusChange  # noqa: E402
 
 User = get_user_model()
@@ -332,6 +332,11 @@ class AccountHistoryInline(admin.TabularInline):
 
 if admin.site.is_registered(User):
     admin.site.unregister(User)
+# Access is chosen as Staff or Administrator on each user (core/user_forms.py), which manages the
+# "Staff" group automatically, so the raw Groups page is hidden to avoid confusion.
+from django.contrib.auth.models import Group  # noqa: E402
+if admin.site.is_registered(Group):
+    admin.site.unregister(Group)
 
 
 @admin.register(User)
@@ -339,10 +344,24 @@ class UserAdmin(BaseUserAdmin):
     """Accounts are suspended, never deleted, so the record of who did what stays for audits.
     'Active' can only be changed with the Suspend / Reactivate buttons, which ask for a reason."""
     list_display = ("username", "full_name", "email", "account_badge", "role", "last_login")
-    list_filter = (AccountStatusFilter, "is_superuser", "groups")
+    list_filter = (AccountStatusFilter, "is_superuser")
     inlines = [AccountHistoryInline]
     actions = ["suspend_selected", "reactivate_selected"]
     change_form_template = "admin/user_change_form.html"
+    add_form_template = "admin/user_add_form.html"
+    form = user_forms.TeamMemberChangeForm
+    add_form = user_forms.TeamMemberAddForm
+    fieldsets = (
+        ("Their details", {"fields": ("first_name", "last_name", "email", "username")}),
+        ("What they can do", {"fields": ("role",)}),
+        ("Sign-in", {"fields": ("password", "account_status", "two_step", "last_login", "date_joined")}),
+    )
+    add_fieldsets = (
+        ("Their details", {"fields": ("first_name", "last_name", "email", "username")}),
+        ("What they can do", {"fields": ("role",)}),
+        ("How they get their password", {"fields": ("password_setup", "password1", "password2")}),
+    )
+    readonly_fields = ("account_status", "two_step", "last_login", "date_joined")
 
     @admin.display(description="Name", ordering="first_name")
     def full_name(self, obj):
@@ -354,13 +373,47 @@ class UserAdmin(BaseUserAdmin):
             return format_html('<span class="sd-acct sd-acct--on">Active</span>')
         return format_html('<span class="sd-acct sd-acct--off">Suspended</span>')
 
+    @admin.display(description="Account")
+    def account_status(self, obj):
+        return self.account_badge(obj)
+
+    @admin.display(description="Two-step login")
+    def two_step(self, obj):
+        device = getattr(obj, "authenticator", None) if obj.pk else None
+        if device and device.confirmed:
+            return f"Authenticator app set up on {timezone.localtime(device.confirmed_at):%d/%m/%Y}" \
+                if device.confirmed_at else "Authenticator app set up"
+        return "Not set up yet (they're asked at their next sign-in)"
+
     @admin.display(description="Role")
     def role(self, obj):
         return "Administrator" if obj.is_superuser else ("Staff" if obj.is_staff else "No admin access")
 
-    def get_readonly_fields(self, request, obj=None):
-        ro = list(super().get_readonly_fields(request, obj))
-        return ro + ["is_active"] if obj else ro
+    def get_inlines(self, request, obj):
+        return self.inlines if obj else []  # a new user has no history yet
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if obj is None:
+            return form
+
+        class WithRequestUser(form):
+            def __init__(self, *args, **kw):
+                kw["request_user"] = request.user
+                super().__init__(*args, **kw)
+        return WithRequestUser
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        user_forms.apply_role(obj, form.cleaned_data["role"])
+        if not change and form.cleaned_data.get("password_setup") == user_forms.EMAIL_LINK:
+            if accounts.send_invite(request, obj):
+                self.message_user(request, f"An email has been sent to {obj.email} with a link to choose "
+                                           f"their password.", messages.SUCCESS)
+            else:
+                self.message_user(request, f"The invitation email to {obj.email} couldn't be sent. Check the "
+                                           f"email settings, or use 'Set password' below and tell them.",
+                                  messages.WARNING)
 
     def has_delete_permission(self, request, obj=None):
         return False  # suspend instead: keeps the audit trail

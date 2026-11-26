@@ -203,3 +203,34 @@ a.sd-acct-btn:hover, button.sd-acct-btn:hover { filter: brightness(1.08); }
 .sd-acct-actions { display: flex; gap: 16px; align-items: center; margin-top: 18px; }
 .sd-acct-cancel { color: #304B98; }
 #status_changes-group td.original p { display: none; }
+
+/* ---- Users: add / edit with role cards ---------------------------------- */
+.sd-acct-intro { max-width: 720px; line-height: 1.55; margin: 0 0 16px; }
+.sd-cards { flex: 1 1 auto; min-width: 0; width: 100%; box-sizing: border-box; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; max-width: 760px; }
+.sd-card { position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px;
+  border: 1.5px solid #D5DAE5; border-radius: 10px; background: #fff; cursor: pointer;
+  transition: border-color .15s, box-shadow .15s; }
+.sd-card:hover { border-color: #8C9BC7; }
+.sd-card input[type=radio] { margin: 3px 0 0; accent-color: #304B98; flex: none; }
+.sd-card__body { display: flex; flex-direction: column; gap: 4px; }
+.sd-card__body strong { color: #1B2A5C; font-size: 15px; }
+.sd-card__body span { color: #55607A; font-size: 13px; line-height: 1.45; }
+.sd-card:has(input:checked) { border-color: #304B98; box-shadow: 0 0 0 3px rgba(48, 75, 152, .12); background: #F6F8FD; }
+.sd-card:has(input:disabled) { cursor: default; opacity: .7; }
+
+form .aligned .sd-cards label.sd-card, .sd-cards label.sd-card {
+  display: flex; width: auto; min-width: 0; max-width: none; padding: 14px 16px; margin: 0; float: none;
+  font-weight: normal; box-sizing: border-box; }
+.sd-card__body > strong, .sd-card__body > span { display: block; }
+@media (max-width: 767px) {
+  .sd-cards { grid-template-columns: 1fr; max-width: 100%; }
+  form .aligned .form-row input[type=text], form .aligned .form-row input[type=email],
+  form .aligned .form-row input[type=password] { max-width: 100%; box-sizing: border-box; }
+}
+@media (max-width: 767px) {
+  #content-main fieldset.module.aligned .form-row { padding-left: 12px; padding-right: 12px; box-sizing: border-box; }
+  #content-main fieldset.module.aligned .form-row input:not([type=radio]):not([type=checkbox]) {
+    width: 100%; max-width: 100%; box-sizing: border-box; }
+  #content-main fieldset.module.aligned .form-row > div,
+  #content-main fieldset.module.aligned .form-row .flex-container { width: auto; max-width: 100%; min-width: 0; }
+}

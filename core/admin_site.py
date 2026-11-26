@@ -53,7 +53,7 @@ class SDAdminSite(admin.AdminSite):
     MAIN = ["candidateregistration", "vacancyenquiry", "contactenquiry"]
     SHORT = {"candidateregistration": "Candidates", "vacancyenquiry": "Vacancies",
              "contactenquiry": "General"}  # fit the sidebar
-    SETTINGS = ["user", "group", "accountstatuschange"]
+    SETTINGS = ["user", "accountstatuschange"]
 
     # ---- pages -------------------------------------------------------------
     def get_urls(self):
