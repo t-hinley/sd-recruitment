@@ -138,9 +138,8 @@ def send_candidate_confirmation(reg, request=None):
         "Kind regards,",
         BUSINESS["name"],
     ]
-    contact = " | ".join(x for x in (BUSINESS.get("phone_display"), BUSINESS.get("email")) if x)
-    if contact:
-        lines.append(contact)
+    if BUSINESS.get("address"):
+        lines.append(BUSINESS["address"])  # office location (BUSINESS_ADDRESS)
 
     reply_to = [BUSINESS["email"]] if BUSINESS.get("email") else list(settings.ENQUIRY_NOTIFICATION_EMAILS[:1])
     try:

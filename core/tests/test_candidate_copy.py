@@ -41,12 +41,14 @@ class CandidateCopyTests(TestCase):
                      "Industry / job category: Aged Care & Disability", "Employment type: Casual, Part - Time",
                      "What we can help with: Job opportunities, Resume support",
                      "Resume package: Basic Resume – $95", "Resume / CV: Jane CV.pdf",
-                     "does not guarantee an interview", "0497 389 693"):
+                     "does not guarantee an interview"):
             self.assertIn(text, copy.body)
         self.assertEqual(copy.attachments, [])  # the CV itself is never emailed
         self.assertNotIn("just reply to this email", copy.body)
         self.assertNotIn("You received this email because", copy.body)
-        self.assertTrue(copy.body.rstrip().endswith("0497 389 693 | admin@sd-recruitment.com"))
+        self.assertTrue(copy.body.rstrip().endswith(
+            "Kind regards,\nSD Recruitment\nSuite 20, 25 Walters Drive, Osborne Park 6017, WA"))
+        self.assertNotIn("0497 389 693", copy.body)
 
     def test_copy_sent_even_without_admin_inbox(self):
         with self.settings(ENQUIRY_NOTIFICATION_EMAILS=[]):
