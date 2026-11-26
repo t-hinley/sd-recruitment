@@ -9,6 +9,7 @@
   <script src="{% static "admin/js/theme.js" %}"></script>
 {% endblock %}
 <script src="{% static 'core/admin_shell.js' %}?v={{ asset_v }}" defer></script>
+<script src="{% static 'core/admin_ui.js' %}?v={{ asset_v }}" defer></script>
 {% block extrastyle %}{% endblock %}
 {% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% block stylesheet_rtl %}{% static "admin/css/rtl.css" %}{% endblock %}">{% endif %}
 {% block extrahead %}{% endblock %}

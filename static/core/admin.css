@@ -420,3 +420,4 @@ a .sd-person b { text-decoration: none; }
 .sd-role input:checked + span { border-color: #304B98; background: #304B98; color: #fff; box-shadow: 0 0 0 3px rgba(48,75,152,.15); }
 .sd-role input:focus-visible + span { outline: 2px solid #ED5A2A; outline-offset: 2px; }
 .sd-role input:disabled + span { opacity: .6; cursor: default; }
+.fb-search.is-typing svg { color: #ED5A2A; animation: sdpulse .8s ease-in-out infinite alternate; } @keyframes sdpulse { to { opacity: .35; } } @media (prefers-reduced-motion: reduce) { .fb-search.is-typing svg { animation: none; } }
