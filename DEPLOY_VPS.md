@@ -4,12 +4,12 @@ For the server that already runs SD Travels and the other SD sites with **Nginx 
 is added as a separate site: its own folder (`/srv/sdrecruitment`), its own Python environment, its own
 Nginx file and its own SSL certificate. **No file of the other sites is changed.**
 
-Domain used below: **`sd-recruitment.com`** (with `www.sd-recruitment.com`).
+Address used below: **`www.recruitment.sd-goc.com.au`** (and `recruitment.sd-goc.com.au`), a subdomain of `sd-goc.com.au`.
 
 ```
 visitor ─► Nginx (ports 80/443)
              ├─ SD Travels / other SD sites   ─► unchanged
-             └─ sd-recruitment.com       ─► /run/sdrecruitment/gunicorn.sock ─► Django (SD Recruitment) ─► PostgreSQL
+             └─ recruitment.sd-goc.com.au ─► /run/sdrecruitment/gunicorn.sock ─► Django (SD Recruitment) ─► PostgreSQL
 ```
 
 Type commands one block at a time. Lines starting with `#` are explanations, not commands.
@@ -19,8 +19,16 @@ Type commands one block at a time. Lines starting with `#` are explanations, not
 ## Step 0 – Before you start
 
 1. GoDaddy → **Servers → Manage → Snapshots → take a snapshot** (lets you undo everything).
-2. DNS (GoDaddy): an `A` record for the domain → the server IP, and a `CNAME` record `www` → the domain.
-   Both names must reach the server before Step 9.
+2. DNS for **sd-goc.com.au** (GoDaddy → My Products → sd-goc.com.au → DNS → Add New Record):
+
+   | Type | Name | Value | TTL |
+   |---|---|---|---|
+   | `A` | `recruitment` | the server's IP address | 1 hour |
+   | `CNAME` | `www.recruitment` | `recruitment.sd-goc.com.au` | 1 hour |
+
+   This adds the two addresses `recruitment.sd-goc.com.au` and `www.recruitment.sd-goc.com.au`; the main
+   `sd-goc.com.au` website and email are not affected. Both must reach the server before Step 9 – check with
+   `ping recruitment.sd-goc.com.au` (it should show the server's IP).
 3. Log in: `ssh sdadmin@YOUR-SERVER-IP`
 
 ## Step 1 – Look before changing anything (read-only)
@@ -98,9 +106,9 @@ save with **Ctrl+O, Enter**, exit with **Ctrl+X**):
 ```
 DJANGO_SECRET_KEY=<the long random text>
 DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=sd-recruitment.com,www.sd-recruitment.com
-DJANGO_CSRF_TRUSTED_ORIGINS=https://sd-recruitment.com,https://www.sd-recruitment.com
-SITE_URL=https://sd-recruitment.com
+DJANGO_ALLOWED_HOSTS=recruitment.sd-goc.com.au,www.recruitment.sd-goc.com.au
+DJANGO_CSRF_TRUSTED_ORIGINS=https://recruitment.sd-goc.com.au,https://www.recruitment.sd-goc.com.au
+SITE_URL=https://www.recruitment.sd-goc.com.au
 DJANGO_BEHIND_PROXY=True
 ```
 
@@ -189,19 +197,19 @@ If `nginx -t` shows an error, do **not** reload; remove the link with
 `sudo rm /etc/nginx/sites-enabled/sdrecruitment` and send the error message for help.
 (`reload` keeps SD Travels running; never use `restart` or `stop` for this.)
 
-Now `http://sd-recruitment.com` redirects to https, which will work after Step 9.
+Now `http://recruitment.sd-goc.com.au` redirects to https, which will work after Step 9.
 
 ## Step 9 – Free SSL certificate (https)
 
 ```bash
-sudo certbot --nginx -d sd-recruitment.com -d www.sd-recruitment.com
+sudo certbot --nginx -d recruitment.sd-goc.com.au -d www.recruitment.sd-goc.com.au
 ```
 
 - Enter an email for renewal notices and agree to the terms.
 - If asked about redirecting, choose **Redirect**.
 - Certbot only edits the SD Recruitment Nginx file and renews automatically.
 
-Open **https://sd-recruitment.com** and **https://sd-recruitment.com/admin/** – the site and admin
+Open **https://recruitment.sd-goc.com.au** and **https://recruitment.sd-goc.com.au/admin/** – the site and admin
 login should load with a padlock. Also open the SD Travels site to confirm it is unchanged.
 
 ## Step 10 – Resumes folder and backups
@@ -250,8 +258,8 @@ sudo systemctl restart sdrecruitment
 
 ## Step 11 – Final checks
 
-- [ ] https://sd-recruitment.com opens with a padlock on desktop and phone.
-- [ ] `https://www.sd-recruitment.com` also opens with a padlock.
+- [ ] https://recruitment.sd-goc.com.au opens with a padlock on desktop and phone.
+- [ ] `https://www.recruitment.sd-goc.com.au` also opens with a padlock.
 - [ ] Submit a vacancy, register a candidate **with a PDF CV**, and send a contact message →
       "Thank you" → notification emails arrive → both rows appear in Airtable.
 - [ ] In the admin, open the candidate and click **Download CV**.
@@ -310,7 +318,7 @@ Only if the site is already running on `db.sqlite3`. Do it at a quiet time; the 
 1. DNS for the new domain: `A` record `@` → server IP, `CNAME` `www` → `@`.
 2. `sudo nano /etc/nginx/sites-available/sdrecruitment` → on the `server_name` line add
    `newdomain.com.au www.newdomain.com.au` → `sudo nginx -t` → `sudo systemctl reload nginx`.
-3. `sudo certbot --nginx -d sd-recruitment.com -d www.sd-recruitment.com -d newdomain.com.au -d www.newdomain.com.au`
+3. `sudo certbot --nginx -d recruitment.sd-goc.com.au -d www.recruitment.sd-goc.com.au -d newdomain.com.au -d www.newdomain.com.au`
 4. `.env`: add the new names to `DJANGO_ALLOWED_HOSTS` and their `https://` versions to
    `DJANGO_CSRF_TRUSTED_ORIGINS`; set `SITE_URL` to the main address.
 5. `sudo systemctl restart sdrecruitment`
@@ -334,7 +342,7 @@ Only if the site is already running on `db.sqlite3`. Do it at a quiet time; the 
 |---|---|
 | **502 Bad Gateway** | The app is not running: check `systemctl status sdrecruitment` and the journal command above. |
 | **Bad Request (400)** | The name is missing from `DJANGO_ALLOWED_HOSTS` in `.env`; fix and restart. |
-| **CSRF error on forms/admin** | `DJANGO_CSRF_TRUSTED_ORIGINS` must contain `https://sd-recruitment.com`; restart. |
+| **CSRF error on forms/admin** | `DJANGO_CSRF_TRUSTED_ORIGINS` must contain `https://recruitment.sd-goc.com.au`; restart. |
 | Pages without styling | `cd /srv/sdrecruitment && .venv/bin/python manage.py collectstatic --noinput` |
 | **413 Request Entity Too Large** on the candidate form | The CV is bigger than Nginx allows: check `client_max_body_size` in the Nginx file. |
 | Certbot fails | DNS must point to this server and port 80 must be open (`sudo ufw status`). |
