@@ -480,3 +480,18 @@ a .sd-person b { text-decoration: none; }
 @keyframes sdnote-in { from { opacity: 0; transform: translateY(-8px); } }
 @media (max-width: 640px) { .sd-notes { top: 72px; right: 16px; left: 16px; width: auto; } }
 @media (prefers-reduced-motion: reduce) { .sd-note { animation: none; transition: none; } }
+
+/* ---- Rows per page (under enquiry lists) ---- */
+.fb-pager { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-top: 1px solid #E6EAF2; }
+.fb-pager .paginator { flex: 1; border-top: 0 !important; margin: 0; }
+.fb-per { display: inline-flex; align-items: center; gap: 8px; padding-left: 12px; font-size: 14px; color: #55627D; white-space: nowrap; }
+.fb-per select { height: 34px; padding: 0 28px 0 10px; border: 1px solid #D5DBE7; border-radius: 8px; background-color: #fff;
+  color: #12305C; font-weight: 600; font-size: 14px; cursor: pointer; }
+.fb-per select:focus { outline: 2px solid #304B98; outline-offset: 1px; }
+.fb-pager .paginator { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: #55627D; font-size: 14px; }
+.fb-pager .paginator a, .fb-pager .paginator .this-page { display: inline-grid; place-items: center; min-width: 34px; height: 34px;
+  padding: 0 8px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.fb-pager .paginator a, .fb-pager .paginator a.end { background: #fff; border: 1px solid #D5DBE7; color: #304B98; }
+.fb-pager .paginator a:hover { background: #F3F6FD; border-color: #304B98; }
+.fb-pager .paginator .this-page { background: #304B98; border: 1px solid #304B98; color: #fff; }
+.fb-pager .paginator input[type=submit] { margin-left: auto; }

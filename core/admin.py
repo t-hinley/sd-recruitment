@@ -7,6 +7,7 @@ forms only (no "Add" button), and only administrators can delete them.
 
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
@@ -127,8 +128,49 @@ class EnquiryAdmin(FilterBarMixin, admin.ModelAdmin):
     wide_fields = ()  # long text shown full width on the record page
     list_editable = ("status",)
     list_select_related = ("assigned_to",)
-    list_per_page = 50
+    per_page_choices = (10, 20, 40, 50)   # "Show [10] per page" under the list; the choice is remembered
+    list_per_page = 10                     # default
+    list_max_show_all = 0                  # no "Show all" link: the per-page choice covers it (max 50)
     actions = ["assign_to_me", "mark_contacted", "mark_closed"]
+
+    # ---- rows per page -------------------------------------------------------------
+    def _per_page_key(self):
+        return "sd_enquiry_per_page"  # one choice for all enquiry lists
+
+    def per_page(self, request):
+        n = request.session.get(self._per_page_key())
+        return n if n in self.per_page_choices else self.list_per_page
+
+    def changelist_view(self, request, extra_context=None):
+        if "per" in request.GET:  # save the choice, then come back without ?per= (Django would read it as a filter)
+            try:
+                n = int(request.GET["per"])
+            except ValueError:
+                n = None
+            if n in self.per_page_choices:
+                request.session[self._per_page_key()] = n
+            rest = request.GET.copy()
+            rest.pop("per")
+            rest.pop("p", None)  # back to page 1
+            return HttpResponseRedirect(request.path + (f"?{rest.urlencode()}" if rest else ""))
+        current = self.per_page(request)
+        rest = request.GET.copy()
+        rest.pop("p", None)
+        options = []
+        for n in self.per_page_choices:
+            rest["per"] = n
+            options.append({"n": n, "url": f"?{rest.urlencode()}", "on": n == current})
+        return super().changelist_view(request, {**(extra_context or {}), "fb_per_page": options})
+
+    def get_changelist(self, request, **kwargs):
+        base, per = super().get_changelist(request, **kwargs), self.per_page(request)
+
+        class PerPageChangeList(base):
+            def get_results(self, request):
+                self.list_per_page = per
+                super().get_results(request)
+
+        return PerPageChangeList
 
     # ---- permissions ---------------------------------------------------------------
     def has_add_permission(self, request):

@@ -391,3 +391,32 @@ class AutoAssignOnStatusTests(TestCase):
             "form-0-status": "new", "_save": "Save"})
         e3.refresh_from_db()
         self.assertEqual((e3.status, e3.assigned_to), ("new", None))
+
+
+@override_settings(STORAGES={"default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+                             "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})
+class PerPageTests(TestCase):
+    def setUp(self):
+        self.client.force_login(User.objects.create_superuser("ppboss", "pp@example.com", "a-strong-pass-123"))
+        for i in range(25):
+            ContactEnquiry.objects.create(name=f"Person {i}", email=f"p{i}@example.com", message="Hi")
+        self.url = reverse("admin:core_contactenquiry_changelist")
+
+    def rows(self, r):
+        return len(r.context["cl"].result_list)
+
+    def test_default_is_10_and_choice_is_remembered_for_all_enquiry_lists(self):
+        r = self.client.get(self.url)
+        self.assertEqual(self.rows(r), 10)
+        self.assertContains(r, 'aria-label="Rows per page"')
+        r = self.client.get(self.url + "?status__exact=new&p=2&per=20")
+        self.assertRedirects(r, self.url + "?status__exact=new", fetch_redirect_response=False)  # back to page 1
+        self.assertEqual(self.rows(self.client.get(self.url)), 20)
+        r = self.client.get(reverse("admin:core_candidateregistration_changelist"))
+        self.assertContains(r, '<option value="?per=20" selected>20</option>', html=True)
+
+    def test_only_offered_sizes_are_accepted(self):
+        self.client.get(self.url + "?per=5000")
+        self.assertEqual(self.rows(self.client.get(self.url)), 10)
+        self.client.get(self.url + "?per=abc")
+        self.assertEqual(self.rows(self.client.get(self.url)), 10)
