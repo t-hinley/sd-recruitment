@@ -262,10 +262,10 @@ class EnquiryAdmin(FilterBarMixin, admin.ModelAdmin):
         if change and "status" in form.changed_data and "assigned_to" not in form.changed_data:
             if obj.status == "new" and obj.assigned_to_id:
                 obj.assigned_to = None
-                self._note(request, f"{self.record_title(obj)} is back to New, so it's no longer assigned to anyone.")
+                self._note(request, "Unassigned.")
             elif obj.status != "new" and not obj.assigned_to_id:
                 obj.assigned_to = request.user
-                self._note(request, f"{self.record_title(obj)} is now assigned to you, because you changed its status.")
+                self._note(request, "Assigned to you.")
         super().save_model(request, obj, form, change)
 
     @staticmethod
@@ -289,15 +289,19 @@ class EnquiryAdmin(FilterBarMixin, admin.ModelAdmin):
     def mark_contacted(self, request, queryset):
         claimed = self._claim_unassigned(request, queryset)
         n = queryset.update(status="contacted", updated_at=timezone.now())
-        self.message_user(request, f"{n} marked as Contacted." + (f" {claimed} that had no owner are now assigned to you."
-                                                               if claimed else ""), messages.SUCCESS)
+        self._bulk_done(request, n, "Contacted", claimed)
 
     @admin.action(description="Mark selected as Closed")
     def mark_closed(self, request, queryset):
         claimed = self._claim_unassigned(request, queryset)
         n = queryset.update(status="closed", updated_at=timezone.now())
-        self.message_user(request, f"{n} marked as Closed." + (f" {claimed} that had no owner are now assigned to you."
-                                                               if claimed else ""), messages.SUCCESS)
+        self._bulk_done(request, n, "Closed", claimed)
+
+    def _bulk_done(self, request, n, status, claimed):
+        lines = [f"{claimed} assigned to you."] if claimed else []
+        self.message_user(request, format_html("<b>{} marked as {}</b>{}", n, status,
+                                               format_html_join("", "<span>{}</span>", ((t,) for t in lines))),
+                          messages.SUCCESS)
 
     def get_actions(self, request):
         actions = super().get_actions(request)

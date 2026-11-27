@@ -343,7 +343,9 @@ class AutoAssignOnStatusTests(TestCase):
 
     def test_changing_status_assigns_unassigned_to_you(self):
         e = self.enquiry()
-        self.post_change(e, status="contacted")
+        r = self.post_change(e, status="contacted")
+        shown = [str(m) for m in r.wsgi_request._messages]
+        self.assertEqual(shown, ["<b>Changes saved</b><span>Assigned to you.</span>"])
         e.refresh_from_db()
         self.assertEqual((e.status, e.assigned_to), ("contacted", self.sam))
 
