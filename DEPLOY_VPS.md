@@ -1,6 +1,6 @@
-# Deploying on the GoDaddy VPS (Ubuntu + Nginx), next to SD Travels and SD Recruitment
+# Deploying on the GoDaddy VPS (Ubuntu + Nginx), next to SD Travels, SD Commercial and SD Education
 
-For the server that already runs SD Travels (and SD Recruitment) with **Nginx on Ubuntu**. SD Recruitment
+For the server that already runs SD Travels and the other SD sites with **Nginx on Ubuntu**. SD Recruitment
 is added as a separate site: its own folder (`/srv/sdrecruitment`), its own Python environment, its own
 Nginx file and its own SSL certificate. **No file of the other sites is changed.**
 
@@ -8,7 +8,7 @@ Domain used below: **`sd-recruitment.com`** (with `www.sd-recruitment.com`).
 
 ```
 visitor ─► Nginx (ports 80/443)
-             ├─ SD Travels / SD Recruitment names ─► unchanged
+             ├─ SD Travels / other SD sites   ─► unchanged
              └─ sd-recruitment.com       ─► /run/sdrecruitment/gunicorn.sock ─► Django (SD Recruitment) ─► PostgreSQL
 ```
 
