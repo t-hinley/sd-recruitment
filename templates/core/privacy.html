@@ -9,38 +9,72 @@
     <p class="eyebrow">Privacy</p>
     <h1>Privacy Policy</h1>
     <p class="page-hero__lead">How we collect, use and look after your personal information.</p>
+    <p class="policy-updated"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg> Last updated November 2026</p>
   </div>
 </section>
 
-<section class="section">
-  <div class="container prose prose--narrow">
-    <p>SD Recruitment respects your privacy. This policy explains how we handle personal information in line with the Australian Privacy Principles.</p>
+<section class="section policy">
+  <div class="container policy__grid">
+    <aside class="policy__nav" aria-label="On this page">
+      <p class="policy__nav-title">On this page</p>
+      <ol>
+        <li><a href="#collect">What we collect</a></li>
+        <li><a href="#use">How we use it</a></li>
+        <li><a href="#protect">How we protect it</a></li>
+        <li><a href="#choices">Your choices</a></li>
+        <li><a href="#contact-privacy">Contact us about privacy</a></li>
+      </ol>
+    </aside>
 
-    <h2>What we collect</h2>
-    <p>We collect the information you give us through our website forms, by email or by phone. Depending on the form, this may include:</p>
-    <ul>
-      <li><strong>Candidates:</strong> your name, contact details, location, the work you are looking for, preferred industry, experience and qualifications, your resume/CV if you choose to provide it, and the support you request.</li>
-      <li><strong>Employers:</strong> your name, business name, contact details and information about the vacancy.</li>
-      <li><strong>General enquiries:</strong> your name, contact details and message.</li>
-    </ul>
+    <div class="policy__body">
+      <p class="policy__intro">SD Recruitment respects your privacy. This policy explains how we handle personal information in line with the Australian Privacy Principles.</p>
 
-    <h2>How we use it</h2>
-    <ul>
-      <li>To respond to your enquiry or registration.</li>
-      <li>To consider candidates for suitable roles and contact them about recruitment opportunities and career support services, where they have agreed to this.</li>
-      <li>To understand an employer's hiring needs and manage the recruitment process.</li>
-    </ul>
-    <p>We will discuss a role with you before sharing your details with a prospective employer. We do not sell your personal information.</p>
+      <ul class="policy-glance" aria-label="At a glance">
+        <li><span><svg class="icon" aria-hidden="true"><use href="#i-heart"/></svg></span><div><b>We never sell your details</b>Your information is used only for recruitment.</div></li>
+        <li><span><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></span><div><b>Resumes stay private</b>Only authorised SD Recruitment staff can open them.</div></li>
+        <li><span><svg class="icon" aria-hidden="true"><use href="#i-check-circle"/></svg></span><div><b>You stay in control</b>See, correct or delete your details at any time.</div></li>
+      </ul>
 
-    <h2>How we protect it</h2>
-    <p>Information submitted through this website is stored on a secure server. Resumes are not publicly accessible and can only be opened by authorised SD Recruitment staff. We keep personal information only as long as it is needed for recruitment purposes or as required by law.</p>
+      <article class="policy-card" id="collect">
+        <header><span class="policy-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-clipboard"/></svg></span><div><small>01</small><h2>What we collect</h2></div></header>
+        <p>We collect the information you give us through our website forms, by email or by phone. Depending on the form, this may include:</p>
+        <dl class="policy-types">
+          <div><dt><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg> Candidates</dt><dd>Your name, contact details, location, the work you are looking for, preferred industry, experience and qualifications, your resume/CV if you choose to provide it, and the support you request.</dd></div>
+          <div><dt><svg class="icon" aria-hidden="true"><use href="#i-briefcase"/></svg> Employers</dt><dd>Your name, business name, contact details and information about the vacancy.</dd></div>
+          <div><dt><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg> General enquiries</dt><dd>Your name, contact details and message.</dd></div>
+        </dl>
+      </article>
 
-    <h2>Your choices</h2>
-    <p>You can ask to see or correct the personal information we hold about you, or ask us to stop contacting you or delete your details, at any time. Registering with us does not guarantee an interview, job offer or placement.</p>
+      <article class="policy-card" id="use">
+        <header><span class="policy-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-dartboard"/></svg></span><div><small>02</small><h2>How we use it</h2></div></header>
+        <ul class="policy-ticks">
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>To respond to your enquiry or registration.</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>To consider candidates for suitable roles and contact them about recruitment opportunities and career support services, where they have agreed to this.</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>To understand an employer's hiring needs and manage the recruitment process.</li>
+        </ul>
+        <p class="policy-note"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span>We will discuss a role with you before sharing your details with a prospective employer. We do not sell your personal information.</span></p>
+      </article>
 
-    <h2>Contact us about privacy</h2>
-    <p>For privacy questions or requests, please <a href="{% url 'core:contact' %}">contact us</a>{% if business.email %} or email <a href="mailto:{{ business.email }}">{{ business.email }}</a>{% endif %}.</p>
-    <p class="muted">Last updated November 2026.</p>
+      <article class="policy-card" id="protect">
+        <header><span class="policy-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span><div><small>03</small><h2>How we protect it</h2></div></header>
+        <p>Information submitted through this website is stored on a secure server. Resumes are not publicly accessible and can only be opened by authorised SD Recruitment staff. We keep personal information only as long as it is needed for recruitment purposes or as required by law.</p>
+      </article>
+
+      <article class="policy-card" id="choices">
+        <header><span class="policy-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-compass"/></svg></span><div><small>04</small><h2>Your choices</h2></div></header>
+        <p>You can ask to see or correct the personal information we hold about you, or ask us to stop contacting you or delete your details, at any time.</p>
+        <p class="policy-note"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span>Registering with us does not guarantee an interview, job offer or placement.</span></p>
+      </article>
+
+      <article class="policy-card policy-card--contact" id="contact-privacy">
+        <header><span class="policy-card__icon"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg></span><div><small>05</small><h2>Contact us about privacy</h2></div></header>
+        <p>For privacy questions or requests, get in touch and we'll help.</p>
+        <div class="policy-actions">
+          <a class="btn btn--blue" href="{% url 'core:contact' %}">Contact us <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          {% if business.email %}<a class="btn btn--ghost" href="mailto:{{ business.email }}"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg> {{ business.email }}</a>{% endif %}
+        </div>
+      </article>
+    </div>
   </div>
 </section>
 {% endblock %}
