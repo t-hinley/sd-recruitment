@@ -20,22 +20,18 @@
       <p class="eyebrow">Who we are</p>
       <h2>A recruitment partner for employers and candidates</h2>
       <p class="about-who__lead">SD Recruitment is a recruitment partner for employers and candidates. We work with businesses that need reliable, capable staff, and with people who are looking for work or planning their next career move.</p>
-      <div class="about-who__cards">
-        <a class="about-who__card" href="{% url 'core:employers' %}">
-          <span class="about-who__icon"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"/></svg></span>
-          <span><b>For employers</b>We manage the time-consuming parts of hiring: understanding the role, finding and screening candidates, and coordinating interviews through to placement.
-          <em>Hiring with us <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></em></span>
-        </a>
-        <a class="about-who__card about-who__card--cand" href="{% url 'core:candidates' %}">
-          <span class="about-who__icon"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg></span>
-          <span><b>For candidates</b>We offer more than job matching. Our career support services, including resume support, interview preparation and career counselling, help people present their experience well and approach opportunities with confidence.
-          <em>Finding work with us <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></em></span>
-        </a>
-      </div>
     </div>
-    <div class="about-who__media">
-      <img src="{% static 'images/hero.jpg' %}" alt="" width="619" height="602" loading="lazy">
-      <p class="about-who__badge"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"/></svg><span><b>Simple, personal and organised</b>From the first call through to placement</span></p>
+    <div class="about-who__cards">
+      <a class="about-who__card" href="{% url 'core:employers' %}">
+        <span class="about-who__icon"><svg class="icon" aria-hidden="true"><use href="#i-briefcase"/></svg></span>
+        <span><b>For employers</b>We manage the time-consuming parts of hiring: understanding the role, finding and screening candidates, and coordinating interviews through to placement.
+        <em>Hiring with us <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></em></span>
+      </a>
+      <a class="about-who__card about-who__card--cand" href="{% url 'core:candidates' %}">
+        <span class="about-who__icon"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg></span>
+        <span><b>For candidates</b>We offer more than job matching. Our career support services, including resume support, interview preparation and career counselling, help people present their experience well and approach opportunities with confidence.
+        <em>Finding work with us <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></em></span>
+      </a>
     </div>
   </div>
 </section>
