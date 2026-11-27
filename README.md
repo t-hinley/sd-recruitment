@@ -105,6 +105,10 @@ python3 -m venv .venv
 
 Open http://127.0.0.1:8000. Locally, emails are printed in the terminal.
 
+**Database:** without any `DB_*` lines in `.env` the site uses a simple SQLite file (`db.sqlite3`).
+Fill in `DB_NAME`, `DB_USER`, `DB_PASSWORD` (see `.env.example`) to use PostgreSQL, as on the live server.
+The tests always run on SQLite.
+
 Run the tests:
 
 ```bash
@@ -112,5 +116,5 @@ Run the tests:
 ```
 
 ## Deploying
-See **[DEPLOY_VPS.md](DEPLOY_VPS.md)** for the GoDaddy VPS (Nginx + Gunicorn), set up next to the
+See **[DEPLOY_VPS.md](DEPLOY_VPS.md)** for the GoDaddy VPS (Nginx + Gunicorn + PostgreSQL), set up next to the
 existing SD sites without changing them. `passenger_wsgi.py` is included if cPanel is used instead.

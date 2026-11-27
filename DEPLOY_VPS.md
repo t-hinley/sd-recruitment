@@ -9,7 +9,7 @@ Domain used below: **`sd-recruitment.com`** (with `www.sd-recruitment.com`).
 ```
 visitor ─► Nginx (ports 80/443)
              ├─ SD Travels / SD Recruitment names ─► unchanged
-             └─ sd-recruitment.com       ─► /run/sdrecruitment/gunicorn.sock ─► Django (SD Recruitment)
+             └─ sd-recruitment.com       ─► /run/sdrecruitment/gunicorn.sock ─► Django (SD Recruitment) ─► PostgreSQL
 ```
 
 Type commands one block at a time. Lines starting with `#` are explanations, not commands.
@@ -42,10 +42,27 @@ sudo ufw status
 
 ```bash
 sudo apt update
-sudo apt install -y python3-venv python3-pip git certbot python3-certbot-nginx
+sudo apt install -y python3-venv python3-pip git certbot python3-certbot-nginx postgresql
 ```
 
-(Only `apt install`; do **not** run `apt upgrade` now – do system upgrades at a separate, quiet time.)
+(Only `apt install`; do **not** run `apt upgrade` now – do system upgrades at a separate, quiet time.
+If SD Education already runs on this server, PostgreSQL is installed and the command just skips it.)
+
+## Step 2b – Database (PostgreSQL)
+
+The site gets its own database and its own database user, separate from the other sites.
+Make a strong password first and copy it:
+
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(24))"
+```
+
+```bash
+sudo -u postgres psql -c "CREATE USER sdrecruitment_user WITH PASSWORD 'PASTE-PASSWORD-HERE';"
+sudo -u postgres psql -c "CREATE DATABASE sdrecruitment OWNER sdrecruitment_user;"
+```
+
+PostgreSQL only listens on the server itself (127.0.0.1), so the database can't be reached from the internet.
 
 ## Step 3 – Download the website code
 
@@ -86,6 +103,19 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://sd-recruitment.com,https://www.sd-recruitmen
 SITE_URL=https://sd-recruitment.com
 DJANGO_BEHIND_PROXY=True
 ```
+
+**Database** (the password from Step 2b; remove the `#` at the start of these lines):
+
+```
+DB_NAME=sdrecruitment
+DB_USER=sdrecruitment_user
+DB_PASSWORD=<the database password>
+DB_HOST=127.0.0.1
+DB_PORT=5432
+```
+
+Without `DB_NAME` the site uses a simple SQLite file (`db.sqlite3`) instead – fine on your own computer,
+but use PostgreSQL on the server.
 
 **Contact details** shown on the site (anything left empty is hidden):
 
@@ -182,7 +212,15 @@ does not serve this folder, so CVs can only be opened by signed-in staff in the 
 Back up the database **and** the CVs together, e.g. weekly:
 
 ```bash
-tar czf ~/sdrecruitment-backup-$(date +%F).tar.gz -C /srv/sdrecruitment db.sqlite3 private_media
+sudo -u postgres pg_dump -Fc sdrecruitment > ~/sdrecruitment-db-$(date +%F).dump
+tar czf ~/sdrecruitment-cvs-$(date +%F).tar.gz -C /srv/sdrecruitment private_media
+```
+
+To restore a database backup (this replaces what is in the database now):
+
+```bash
+sudo -u postgres pg_restore --clean --if-exists -d sdrecruitment ~/sdrecruitment-db-YYYY-MM-DD.dump
+sudo systemctl restart sdrecruitment
 ```
 
 ## Step 10b – Airtable
@@ -233,6 +271,40 @@ bash /srv/sdrecruitment/deploy/update.sh
 It downloads the latest code, installs packages, updates the database and styles, and restarts the
 app. Take a snapshot first for bigger updates.
 
+## Moving a live site from SQLite to PostgreSQL (one time)
+
+Only if the site is already running on `db.sqlite3`. Do it at a quiet time; the site is down for a few minutes.
+
+1. Take a GoDaddy snapshot, and keep a copy of the SQLite file:
+   ```bash
+   cp /srv/sdrecruitment/db.sqlite3 ~/sdrecruitment-before-postgres.sqlite3
+   ```
+2. Get the latest code and packages (includes the PostgreSQL driver):
+   ```bash
+   bash /srv/sdrecruitment/deploy/update.sh
+   ```
+3. Create the database (Step 2b), but **don't** add the `DB_*` lines to `.env` yet.
+4. Stop the site so nothing new arrives while copying, then save everything from SQLite to a file:
+   ```bash
+   sudo systemctl stop sdrecruitment
+   cd /srv/sdrecruitment
+   .venv/bin/python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.permission -e sessions -o ~/sdrecruitment-data.json
+   ```
+5. Add the `DB_*` lines to `.env` (Step 5), then create the tables in PostgreSQL and load the data:
+   ```bash
+   .venv/bin/python manage.py migrate
+   .venv/bin/python manage.py loaddata ~/sdrecruitment-data.json
+   sudo systemctl start sdrecruitment
+   ```
+6. Sign in to the admin and check the enquiries and users are all there (record addresses stay the same).
+   Everyone has to sign in again once. Then delete the data file, it holds personal details:
+   ```bash
+   rm ~/sdrecruitment-data.json
+   ```
+
+**To go back** if something looks wrong: put a `#` in front of the `DB_*` lines in `.env` and
+`sudo systemctl restart sdrecruitment` – the site uses the untouched `db.sqlite3` again.
+
 ## Adding another domain name later (e.g. `newdomain.com.au`)
 
 1. DNS for the new domain: `A` record `@` → server IP, `CNAME` `www` → `@`.
@@ -252,7 +324,9 @@ app. Take a snapshot first for bigger updates.
 | App errors (last 50 lines) | `sudo journalctl -u sdrecruitment -n 50 --no-pager` |
 | Nginx errors for this site | `sudo tail -n 50 /var/log/nginx/sdrecruitment.error.log` |
 | Test Nginx config | `sudo nginx -t` |
-| Back up enquiries and CVs | `tar czf ~/sdrecruitment-backup-$(date +%F).tar.gz -C /srv/sdrecruitment db.sqlite3 private_media` |
+| Back up the database | `sudo -u postgres pg_dump -Fc sdrecruitment > ~/sdrecruitment-db-$(date +%F).dump` |
+| Back up CVs | `tar czf ~/sdrecruitment-cvs-$(date +%F).tar.gz -C /srv/sdrecruitment private_media` |
+| Open the database | `sudo -u postgres psql sdrecruitment` |
 
 ## Troubleshooting
 
