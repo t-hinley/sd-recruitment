@@ -114,9 +114,11 @@ class AdminTests(TestCase):
         self.assertIn("No records for this period.", text)
         self.assertIn("1 Jan 2001", text)
 
-    def test_dashboard_links_preselect_format(self):
+    def test_reports_in_sidebar_not_on_dashboard(self):
         self.client.force_login(self.admin)
-        self.assertContains(self.client.get(reverse("admin:index")), "Export reports (PDF)")
+        r = self.client.get(reverse("admin:index"))
+        self.assertNotContains(r, "Export reports")
+        self.assertContains(r, reverse("admin:reports"))  # the Reports link in the sidebar
         r = self.client.get(reverse("admin:reports"), {"format": "pdf"})
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'value="pdf" checked')
