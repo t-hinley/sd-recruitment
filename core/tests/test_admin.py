@@ -347,15 +347,17 @@ class AutoAssignOnStatusTests(TestCase):
         e.refresh_from_db()
         self.assertEqual((e.status, e.assigned_to), ("contacted", self.sam))
 
-    def test_owner_and_explicit_choice_are_kept(self):
+    def test_owner_is_kept_and_no_manual_choice(self):
         e = self.enquiry(assigned_to=self.other)
         self.post_change(e, status="contacted")
         e.refresh_from_db()
         self.assertEqual(e.assigned_to, self.other)          # someone else's stays theirs
         e2 = self.enquiry()
+        r = self.client.get(reverse("admin:core_contactenquiry_change", args=[e2.pk]))
+        self.assertNotContains(r, 'name="assigned_to"')     # no "Assigned to" box on the record page
         self.post_change(e2, status="contacted", assigned_to=str(self.other.pk))
         e2.refresh_from_db()
-        self.assertEqual(e2.assigned_to, self.other)         # picking a person wins
+        self.assertEqual(e2.assigned_to, self.sam)           # a posted owner is ignored; the status change decides
         e3 = self.enquiry()
         self.post_change(e3, notes="Just a note")            # no status change: no assignment
         e3.refresh_from_db()
@@ -379,10 +381,10 @@ class AutoAssignOnStatusTests(TestCase):
         self.post_change(e, status="new")
         e.refresh_from_db()
         self.assertEqual((e.status, e.assigned_to), ("new", None))
-        e2 = self.enquiry(status="contacted", assigned_to=self.sam)   # choosing a person in the same save wins
+        e2 = self.enquiry(status="contacted", assigned_to=self.sam)   # a posted owner is ignored
         self.post_change(e2, status="new", assigned_to=str(self.other.pk))
         e2.refresh_from_db()
-        self.assertEqual(e2.assigned_to, self.other)
+        self.assertIsNone(e2.assigned_to)
         e3 = self.enquiry(status="contacted", assigned_to=self.other)  # list dropdown too
         self.client.post(reverse("admin:core_contactenquiry_changelist"), {
             "form-TOTAL_FORMS": "1", "form-INITIAL_FORMS": "1", "form-0-id": str(e3.pk),

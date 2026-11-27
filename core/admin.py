@@ -43,7 +43,7 @@ class AssignedFilter(admin.SimpleListFilter):
 
 
 FOLLOW_UP = ("Follow-up", {
-    "fields": ("status", "assigned_to", "notes", "updated_at"),
+    "fields": ("status", "notes", "updated_at"),
     "description": "Only these can be changed. The details on the left are exactly what the visitor sent.",
 })
 
