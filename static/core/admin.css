@@ -456,3 +456,27 @@ a .sd-person b { text-decoration: none; }
 .dl-links { display: inline-flex; gap: 4px; flex-wrap: wrap; }
 .dl-links a { padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; text-decoration: none; }
 .dl-links a:hover { background: #F3F6FD; }
+
+/* ---- Admin messages: notification cards (top right; success/info fade away) ---- */
+.sd-notes { position: fixed; top: 86px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 10px;
+  width: min(420px, calc(100vw - 32px)); pointer-events: none; }
+.sd-note { pointer-events: auto; display: flex; align-items: flex-start; gap: 12px; padding: 14px 14px 14px 16px;
+  background: #fff; border: 1px solid #E3E8F2; border-left: 4px solid #304B98; border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(18,48,92,.16); color: #1B2A5C; font-size: 14px; line-height: 1.45;
+  animation: sdnote-in .25s ease-out; transition: opacity .3s, transform .3s; }
+.sd-note.is-leaving { opacity: 0; transform: translateX(16px); }
+.sd-note__icon { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  color: #fff; font-weight: 800; font-size: 13px; background: #304B98; }
+.sd-note__text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sd-note__text b { display: block; color: #12305C; font-size: 15px; }
+.sd-note__text span { display: block; color: #55627D; margin-top: 2px; }
+.sd-note__text a { color: #304B98; font-weight: 600; }
+.sd-note__close { flex: none; border: 0; background: none; color: #8A93A8; font-size: 20px; line-height: 1; padding: 0 2px;
+  cursor: pointer; border-radius: 6px; }
+.sd-note__close:hover { color: #12305C; background: #F3F6FD; }
+.sd-note--success { border-left-color: #1F9D63; } .sd-note--success .sd-note__icon { background: #1F9D63; }
+.sd-note--warning { border-left-color: #D98A00; } .sd-note--warning .sd-note__icon { background: #D98A00; }
+.sd-note--error { border-left-color: #B3261E; } .sd-note--error .sd-note__icon { background: #B3261E; }
+@keyframes sdnote-in { from { opacity: 0; transform: translateY(-8px); } }
+@media (max-width: 640px) { .sd-notes { top: 72px; right: 16px; left: 16px; width: auto; } }
+@media (prefers-reduced-motion: reduce) { .sd-note { animation: none; transition: none; } }

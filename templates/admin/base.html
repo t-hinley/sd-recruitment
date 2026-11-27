@@ -85,9 +85,13 @@
       <main id="content-start" class="content" tabindex="-1">
         {% block messages %}
           {% if messages %}
-            <ul class="messagelist">{% for message in messages %}
-              {% if 'toast' not in message.tags %}<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>{% endif %}
-            {% endfor %}</ul>
+            <div class="sd-notes" role="status" aria-live="polite">{% for message in messages %}{% if 'toast' not in message.tags %}
+              <div class="sd-note sd-note--{{ message.level_tag|default:'info' }}"{% if message.level_tag == "success" or message.level_tag == "info" %} data-autohide{% endif %}>
+                <span class="sd-note__icon" aria-hidden="true">{% if message.level_tag == "success" %}&#10003;{% elif message.level_tag == "error" or message.level_tag == "warning" %}!{% else %}i{% endif %}</span>
+                <div class="sd-note__text">{{ message|capfirst }}</div>
+                <button type="button" class="sd-note__close" aria-label="Dismiss">&times;</button>
+              </div>
+            {% endif %}{% endfor %}</div>
           {% endif %}
         {% endblock messages %}
         <!-- Content -->

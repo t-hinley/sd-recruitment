@@ -9,7 +9,7 @@ from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.text import capfirst
 
 from . import airtable
@@ -220,13 +220,23 @@ class EnquiryAdmin(FilterBarMixin, admin.ModelAdmin):
         if change and "status" in form.changed_data and "assigned_to" not in form.changed_data:
             if obj.status == "new" and obj.assigned_to_id:
                 obj.assigned_to = None
-                self.message_user(request, f"“{obj}” is back to New, so it is no longer assigned to anyone.",
-                                  messages.INFO)
+                self._note(request, f"{self.record_title(obj)} is back to New, so it's no longer assigned to anyone.")
             elif obj.status != "new" and not obj.assigned_to_id:
                 obj.assigned_to = request.user
-                self.message_user(request, f"“{obj}” is now assigned to you, because you changed its status.",
-                                  messages.INFO)
+                self._note(request, f"{self.record_title(obj)} is now assigned to you, because you changed its status.")
         super().save_model(request, obj, form, change)
+
+    @staticmethod
+    def _note(request, text):
+        request.__dict__.setdefault("_sd_notes", []).append(text)
+
+    def message_user(self, request, message, level=messages.INFO, extra_tags="", fail_silently=False):
+        """One short 'Changes saved' message (with any assignment note under it) instead of Django's long
+        'The candidate registration … was changed successfully. You may edit it again below.' plus a second one."""
+        if level == messages.SUCCESS and "changed successfully" in str(message):
+            notes = request.__dict__.pop("_sd_notes", [])
+            message = format_html("<b>Changes saved</b>{}", format_html_join("", "<span>{}</span>", ((n,) for n in notes)))
+        super().message_user(request, message, level, extra_tags, fail_silently)
 
     @staticmethod
     def _claim_unassigned(request, queryset):

@@ -32,3 +32,19 @@
     });
   });
 })();
+
+/* Admin messages: close with ✕; success and info messages fade away after 6 seconds (not while hovered). */
+(function () {
+  function dismiss(note) {
+    note.classList.add("is-leaving");
+    setTimeout(function () { note.remove(); }, 300);
+  }
+  document.querySelectorAll(".sd-note").forEach(function (note) {
+    var close = note.querySelector(".sd-note__close");
+    if (close) close.addEventListener("click", function () { dismiss(note); });
+    if (!note.hasAttribute("data-autohide")) return;
+    var timer = setTimeout(function () { dismiss(note); }, 6000);
+    note.addEventListener("mouseenter", function () { clearTimeout(timer); });
+    note.addEventListener("mouseleave", function () { timer = setTimeout(function () { dismiss(note); }, 2500); });
+  });
+})();
