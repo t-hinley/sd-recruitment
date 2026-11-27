@@ -109,6 +109,12 @@ Open http://127.0.0.1:8000. Locally, emails are printed in the terminal.
 Fill in `DB_NAME`, `DB_USER`, `DB_PASSWORD` (see `.env.example`) to use PostgreSQL, as on the live server.
 The tests always run on SQLite.
 
+Sample data to see how the admin looks (never sent to Airtable; remove with `--remove`):
+
+```bash
+.venv/bin/python manage.py demo_enquiries
+```
+
 Run the tests:
 
 ```bash

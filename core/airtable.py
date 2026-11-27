@@ -152,6 +152,14 @@ def _table_url(obj):
     return f"{API}/{settings.AIRTABLE_BASE_ID}/{urllib.parse.quote(table_for(obj), safe='')}"
 
 
+DEMO_EMAIL_DOMAIN = "@demo.example.com"
+
+
+def is_demo(obj):
+    """Sample records made by `manage.py demo_enquiries` (their email ends in @demo.example.com)."""
+    return (getattr(obj, "email", "") or "").lower().endswith(DEMO_EMAIL_DOMAIN)
+
+
 def push(obj):
     """Create the Airtable copy of one record (once). Never raises; records the result on the object.
     Returns True when Airtable has it."""
@@ -159,7 +167,7 @@ def push(obj):
     model = type(obj)
     if obj.airtable_id:
         return True
-    if not enabled():
+    if is_demo(obj) or not enabled():  # sample records (manage.py demo_enquiries) never go to Airtable
         model.objects.filter(pk=obj.pk, airtable_id="").update(airtable_status=AIRTABLE_OFF)
         obj.airtable_status = AIRTABLE_OFF
         return False
