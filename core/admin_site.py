@@ -39,6 +39,20 @@ def icon(name, size=20):
             % (size, size, ICONS.get(name, ICONS["default"])))
 
 
+def short_ago(when):
+    """'just now', '5m ago', '3h ago', '2d ago', then the date."""
+    secs = max(0, int((timezone.now() - when).total_seconds()))
+    if secs < 60:
+        return "just now"
+    if secs < 3600:
+        return f"{secs // 60}m ago"
+    if secs < 86400:
+        return f"{secs // 3600}h ago"
+    if secs < 7 * 86400:
+        return f"{secs // 86400}d ago"
+    return timezone.localtime(when).strftime("%d %b")
+
+
 def bars(rows):
     top = max([n for _, n in rows] or [1]) or 1
     return [{"label": label, "n": n, "pct": max(4, round(100 * n / top)) if n else 0} for label, n in rows]
@@ -285,22 +299,34 @@ class SDAdminSite(admin.AdminSite):
         for r in support_rows:
             r["url"] = support_links[r["label"]]
 
-        recent = [{"name": e.full_name, "email": e.email, "kind": "Candidate · " + e.industry,
-                   "message": e.position_sought, "status": e.status, "status_label": e.get_status_display(),
+        def initials(name):
+            return "".join(w[0] for w in (name or "?").split()[:2]).upper()
+
+        recent = [{"name": e.full_name, "email": e.email, "type": "candidate",
+                   "kind": " · ".join(x for x in ("Candidate", (e.position_sought or "").splitlines()[0][:40]
+                                                  if e.position_sought else "", e.industry) if x),
+                   "message": "", "status": e.status, "status_label": e.get_status_display(),
                    "when": e.created_at, "url": reverse("admin:core_candidateregistration_change", args=[e.pk])}
                   for e in cands[:6]]
-        recent += [{"name": e.company, "email": e.email, "kind": "Vacancy · " + e.position, "message": e.details,
-                    "status": e.status, "status_label": e.get_status_display(), "when": e.created_at,
-                    "url": reverse("admin:core_vacancyenquiry_change", args=[e.pk])} for e in vacs[:6]]
-        recent += [{"name": e.name, "email": e.email, "kind": "General enquiry",
+        recent += [{"name": e.company, "email": e.email, "type": "vacancy", "kind": "Vacancy · " + e.position,
+                    "message": e.details, "status": e.status, "status_label": e.get_status_display(),
+                    "when": e.created_at, "url": reverse("admin:core_vacancyenquiry_change", args=[e.pk])}
+                   for e in vacs[:6]]
+        recent += [{"name": e.name, "email": e.email, "type": "general", "kind": "General enquiry",
                     "message": e.message, "status": e.status, "status_label": e.get_status_display(),
                     "when": e.created_at, "url": reverse("admin:core_contactenquiry_change", args=[e.pk])}
                    for e in contacts[:6]]
-        recent = sorted(recent, key=lambda r: r["when"], reverse=True)[:8]
+        recent = sorted(recent, key=lambda r: r["when"], reverse=True)[:6]
+        for r in recent:
+            r["initials"], r["ago"] = initials(r["name"]), short_ago(r["when"])
 
-        actions = [{"flag": e.action_flag, "repr": e.object_repr, "type": e.content_type.name if e.content_type else "",
-                    "url": e.get_admin_url(), "when": e.action_time}
-                   for e in LogEntry.objects.filter(user=request.user).select_related("content_type")[:8]]
+        verbs = {1: ("added", "Added"), 2: ("changed", "Changed"), 3: ("deleted", "Deleted")}
+        actions = []
+        for e in LogEntry.objects.filter(user=request.user).select_related("content_type")[:6]:
+            key, verb = verbs.get(e.action_flag, ("changed", "Changed"))
+            actions.append({"key": key, "verb": verb, "repr": e.object_repr,
+                            "type": e.content_type.name if e.content_type else "",
+                            "url": "" if e.action_flag == 3 else e.get_admin_url(), "ago": short_ago(e.action_time)})
 
         extra_context = {
             **(extra_context or {}),

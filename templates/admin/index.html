@@ -87,26 +87,36 @@
   <section class="sdpanel">
     <header><h3>Latest from the website</h3><a href="{{ cand_url }}">All candidates &rarr;</a></header>
     {% if recent %}
-    <ul class="sdlist">
+    <ul class="dl-feed">
       {% for e in recent %}
-      <li>
-        <span class="sdav2">{{ e.name|slice:":1"|upper }}</span>
-        <div class="sdtext"><a href="{{ e.url }}"><b>{{ e.name }}</b></a><small>{{ e.kind }} &middot; {{ e.email }}</small>{% if e.message %}<p>{{ e.message|truncatechars:90 }}</p>{% endif %}</div>
-        <span class="sdchip st-{{ e.status }}">{{ e.status_label }}</span>
-      </li>
+      <li><a class="dl-row" href="{{ e.url }}">
+        <span class="dl-av dl-av--{{ e.type }}" aria-hidden="true">{{ e.initials }}</span>
+        <span class="dl-main">
+          <span class="dl-top"><b>{{ e.name }}</b><span class="sdchip st-{{ e.status }}">{{ e.status_label }}</span></span>
+          <span class="dl-sub">{{ e.kind }}{% if e.email %} &middot; {{ e.email }}{% endif %}</span>
+          {% if e.message %}<span class="dl-msg">{{ e.message|truncatechars:110 }}</span>{% endif %}
+        </span>
+        <span class="dl-when">{{ e.ago }}</span>
+      </a></li>
       {% endfor %}
     </ul>
     {% else %}<p class="sdnone">No enquiries yet.</p>{% endif %}
   </section>
   <section class="sdpanel">
-    <header><h3>Recent actions</h3></header>
+    <header><h3>Your recent actions</h3></header>
     {% if recent_actions %}
-    <ul class="sdacts">
+    <ul class="dl-acts">
       {% for a in recent_actions %}
-      <li class="f{{ a.flag }}"><span class="sddot"></span><div>{% if a.url %}<a href="{{ a.url }}">{{ a.repr }}</a>{% else %}{{ a.repr }}{% endif %}<small>{{ a.type }} &middot; {{ a.when|timesince }} ago</small></div></li>
+      <li>
+        <span class="dl-act dl-act--{{ a.key }}" title="{{ a.verb }}" aria-hidden="true">{% if a.key == "added" %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>{% elif a.key == "deleted" %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>{% else %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>{% endif %}</span>
+        <div class="dl-actbody">
+          {% if a.url %}<a href="{{ a.url }}">{{ a.repr }}</a>{% else %}<span class="dl-gone">{{ a.repr }}</span>{% endif %}
+          <small>{{ a.verb }} &middot; {{ a.type }} &middot; {{ a.ago }}</small>
+        </div>
+      </li>
       {% endfor %}
     </ul>
-    {% else %}<p class="sdnone">{% translate 'None available' %}</p>{% endif %}
+    {% else %}<p class="sdnone">Nothing yet. Changes you make in the admin appear here.</p>{% endif %}
   </section>
 </div>
 {% endblock %}
