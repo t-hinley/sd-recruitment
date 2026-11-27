@@ -10,6 +10,7 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
+from django.utils.text import capfirst
 
 from . import airtable
 from .models import (AIRTABLE_FAILED, AIRTABLE_SENT, AuthenticatorDevice, CandidateRegistration, ContactEnquiry,
@@ -812,6 +813,94 @@ class AccountStatusChangeAdmin(FilterBarMixin, admin.ModelAdmin):
 
     def has_view_permission(self, request, obj=None):
         return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Activity: every change made in the admin (Django's own history), read-only. Staff see their own changes;
+# administrators can switch to everyone's. Linked from "Your recent actions" on the dashboard.
+# ---------------------------------------------------------------------------------------------------------
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION, LogEntry  # noqa: E402
+
+
+class ActivityWhoFilter(admin.SimpleListFilter):
+    title = "whose changes"
+    parameter_name = "who"
+
+    def lookups(self, request, model_admin):
+        return [("me", "Mine"), ("all", "Everyone")] if request.user.is_superuser else []
+
+    def queryset(self, request, queryset):
+        if self.value() == "me" or not request.user.is_superuser:
+            return queryset.filter(user=request.user)
+        return queryset
+
+
+@admin.register(LogEntry)
+class ActivityAdmin(FilterBarMixin, admin.ModelAdmin):
+    list_display = ("when", "action_badge", "object_link", "kind", "details", "who")
+    list_display_links = None
+    list_filter = (ActivityWhoFilter, "action_flag", "content_type", "action_time")
+    list_select_related = ("user", "content_type")
+    search_fields = ("object_repr", "change_message")
+    date_hierarchy = None
+    list_per_page = 50
+    primary_filters = ("who", "action_flag", "content_type")
+    filter_titles = {"who": "Whose", "action_flag": "Action", "content_type": "Type", "action_time": "Date"}
+    list_tabs = (("All", {}, ""), ("Added", {"action_flag__exact": str(ADDITION)}, ""),
+                 ("Changed", {"action_flag__exact": str(CHANGE)}, ""),
+                 ("Deleted", {"action_flag__exact": str(DELETION)}, "warn"))
+    list_title = "Activity"
+    list_subtitle = "Changes made in this admin, newest first. Read-only."
+    search_placeholder = "Search record name or what changed…"
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs if request.user.is_superuser else qs.filter(user=request.user)
+
+    @admin.display(description="When", ordering="action_time")
+    def when(self, obj):
+        return timezone.localtime(obj.action_time).strftime("%d %b %Y, %I:%M %p")
+
+    @admin.display(description="Action", ordering="action_flag")
+    def action_badge(self, obj):
+        label, tone = {ADDITION: ("Added", "on"), CHANGE: ("Changed", "admin"), DELETION: ("Deleted", "off")}.get(
+            obj.action_flag, ("Changed", "admin"))
+        return format_html('<span class="sd-acct sd-acct--{}">{}</span>', tone, label)
+
+    @admin.display(description="Record")
+    def object_link(self, obj):
+        url = obj.get_admin_url() if obj.action_flag != DELETION else ""
+        if url:
+            return format_html('<a href="{}"><b>{}</b></a>', url, obj.object_repr)
+        return format_html('<span class="dl-gone">{}</span>', obj.object_repr)
+
+    @admin.display(description="Type", ordering="content_type__model")
+    def kind(self, obj):
+        return capfirst(obj.content_type.name) if obj.content_type else "-"
+
+    @admin.display(description="What changed")
+    def details(self, obj):
+        text = obj.get_change_message() or "-"
+        return (text[:120] + "…") if len(text) > 120 else text
+
+    @admin.display(description="By", ordering="user__first_name")
+    def who(self, obj):
+        return (obj.user.get_full_name() or obj.user.get_username()) if obj.user_id else "-"
+
+    def has_module_permission(self, request):
+        return False  # not in the sidebar: opened from "Your recent actions" on the dashboard
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_active and request.user.is_staff
 
     def has_add_permission(self, request):
         return False

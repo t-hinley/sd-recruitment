@@ -453,3 +453,6 @@ a .sd-person b { text-decoration: none; }
 .dl-gone { color: #8A93A8; text-decoration: line-through; }
 .dl-actbody small { display: block; color: #6B7690; font-size: 12.5px; margin-top: 2px; }
 @media (max-width: 640px) { .dl-row, .dl-acts > li { padding: 12px 16px; } .dl-top { flex-wrap: wrap; } }
+.dl-links { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.dl-links a { padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; text-decoration: none; }
+.dl-links a:hover { background: #F3F6FD; }

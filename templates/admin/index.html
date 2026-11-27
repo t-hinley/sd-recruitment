@@ -85,7 +85,7 @@
 
 <div class="sdpanels wide">
   <section class="sdpanel">
-    <header><h3>Latest from the website</h3><a href="{{ cand_url }}">All candidates &rarr;</a></header>
+    <header><h3>Latest from the website</h3><span class="dl-links"><a href="{{ cand_url }}">Candidates</a><a href="{{ vac_url }}">Vacancies</a><a href="{% url 'admin:core_contactenquiry_changelist' %}">General</a></span></header>
     {% if recent %}
     <ul class="dl-feed">
       {% for e in recent %}
@@ -103,7 +103,7 @@
     {% else %}<p class="sdnone">No enquiries yet.</p>{% endif %}
   </section>
   <section class="sdpanel">
-    <header><h3>Your recent actions</h3></header>
+    <header><h3>Your recent actions</h3><a href="{% url 'admin:admin_logentry_changelist' %}?who=me">View all &rarr;</a></header>
     {% if recent_actions %}
     <ul class="dl-acts">
       {% for a in recent_actions %}
