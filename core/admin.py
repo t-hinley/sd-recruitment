@@ -213,13 +213,19 @@ class EnquiryAdmin(FilterBarMixin, admin.ModelAdmin):
         self.message_user(request, f"{n} assigned to you.", messages.SUCCESS)
 
     def save_model(self, request, obj, form, change):
-        """Changing the status of an unassigned enquiry makes you its owner (record page and list dropdown).
-        An enquiry someone else already owns keeps its owner; choosing a person in 'Assigned to' wins."""
-        if (change and "status" in form.changed_data and not obj.assigned_to_id
-                and "assigned_to" not in form.changed_data):
-            obj.assigned_to = request.user
-            self.message_user(request, f"“{obj}” is now assigned to you, because you changed its status.",
-                              messages.INFO)
+        """Status changes look after 'Assigned to' (record page and list dropdown):
+        - back to New: the enquiry is unassigned again, so anyone can pick it up;
+        - any other status on an unassigned enquiry: it becomes yours.
+        An enquiry someone else owns keeps its owner, and choosing a person in 'Assigned to' always wins."""
+        if change and "status" in form.changed_data and "assigned_to" not in form.changed_data:
+            if obj.status == "new" and obj.assigned_to_id:
+                obj.assigned_to = None
+                self.message_user(request, f"“{obj}” is back to New, so it is no longer assigned to anyone.",
+                                  messages.INFO)
+            elif obj.status != "new" and not obj.assigned_to_id:
+                obj.assigned_to = request.user
+                self.message_user(request, f"“{obj}” is now assigned to you, because you changed its status.",
+                                  messages.INFO)
         super().save_model(request, obj, form, change)
 
     @staticmethod

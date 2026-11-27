@@ -373,3 +373,19 @@ class AutoAssignOnStatusTests(TestCase):
         a.refresh_from_db(); b.refresh_from_db()
         self.assertEqual((a.status, a.assigned_to), ("closed", self.sam))
         self.assertEqual((b.status, b.assigned_to), ("closed", self.other))
+
+    def test_back_to_new_unassigns(self):
+        e = self.enquiry(status="contacted", assigned_to=self.sam)
+        self.post_change(e, status="new")
+        e.refresh_from_db()
+        self.assertEqual((e.status, e.assigned_to), ("new", None))
+        e2 = self.enquiry(status="contacted", assigned_to=self.sam)   # choosing a person in the same save wins
+        self.post_change(e2, status="new", assigned_to=str(self.other.pk))
+        e2.refresh_from_db()
+        self.assertEqual(e2.assigned_to, self.other)
+        e3 = self.enquiry(status="contacted", assigned_to=self.other)  # list dropdown too
+        self.client.post(reverse("admin:core_contactenquiry_changelist"), {
+            "form-TOTAL_FORMS": "1", "form-INITIAL_FORMS": "1", "form-0-id": str(e3.pk),
+            "form-0-status": "new", "_save": "Save"})
+        e3.refresh_from_db()
+        self.assertEqual((e3.status, e3.assigned_to), ("new", None))
