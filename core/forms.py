@@ -4,11 +4,12 @@ from pathlib import Path
 from django import forms
 from django.conf import settings
 
+from . import validators
+
 from .models import (CANDIDATE_INDUSTRIES, EMPLOYER_INDUSTRIES, EMPLOYMENT_TYPES, EXPERIENCE_LEVELS,
                      RESUME_PACKAGES, VACANCY_COUNTS, VISA_TYPES, CandidateRegistration, ContactEnquiry,
                      VacancyEnquiry)
 
-PHONE_RE = re.compile(r"^[0-9 +()\-]{8,20}$")
 
 # First bytes of the allowed document types, so a renamed program or image is not accepted as a CV.
 SIGNATURES = {
@@ -33,10 +34,10 @@ class HoneypotMixin(forms.Form):
         return ""
 
     def clean_phone(self):
-        phone = self.cleaned_data.get("phone", "").strip()
-        if phone and not PHONE_RE.match(phone):
-            raise forms.ValidationError("Please enter a valid phone number.")
-        return phone
+        return validators.clean_phone(self.cleaned_data.get("phone", ""))
+
+    def clean_email(self):
+        return validators.clean_email(self.cleaned_data.get("email", ""))
 
 
 def clean_resume_file(f):

@@ -19,7 +19,7 @@ VACANCY = {
     "vacancy-company": "Cafe Co",
     "vacancy-industry": "Hospitality",
     "vacancy-contact_name": "Sam Lee",
-    "vacancy-phone": "0411 111 111",
+    "vacancy-phone": "0412 345 679",
     "vacancy-email": "sam@cafe.com.au",
     "vacancy-position": "Restaurant Manager",
     "vacancy-employment_types": ["Full Time", "Casual"],
@@ -34,7 +34,7 @@ def candidate_data(**extra):
     data = {
         "candidate-full_name": "Jane Citizen",
         "candidate-email": "jane@example.com",
-        "candidate-phone": "0400 000 000",
+        "candidate-phone": "0412 345 678",
         "candidate-location": "Perth WA",
         "candidate-visa_type": "Student Visa (Subclass 500)",
         "candidate-preferred_location": "Perth metro",

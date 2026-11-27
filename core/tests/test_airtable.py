@@ -59,7 +59,7 @@ class AirtableTests(TestCase):
         self.assertEqual(f["flde6QS0zw4mK3vcV"], "Cafe Co")              # Organisation / Company Name
         self.assertEqual(f["fldZzLlrg8bgGdkpY"], "Hospitality")           # Industry / Sector
         self.assertEqual(f["fldg9tVfNK7REj52P"], "Sam Lee")               # "Contact Person"
-        self.assertEqual(f["fldDXTuMrsq5riVPU"], "0411 111 111")          # Phone Number
+        self.assertEqual(f["fldDXTuMrsq5riVPU"], "0412 345 679")          # Phone Number
         self.assertEqual(f["fldRtIJEPWV15RmSv"], "Restaurant Manager")    # Position Recruiting For
         self.assertEqual(f["fldlKUehNaiNjxa90"], ["Full Time", "Casual"])  # Employment Type
         self.assertEqual(f["fldg2R4etvUrg9WBQ"], "2-5")                   # Number of Staff Required
@@ -139,7 +139,7 @@ class SeparateTablesTests(TestCase):
         f = body["records"][0]["fields"]
         self.assertEqual(f["Company Name"], "Cafe Co")
         self.assertEqual(f["Contact Person"], "Sam Lee")
-        self.assertEqual(f["Mobile Number"], "0411 111 111")
+        self.assertEqual(f["Mobile Number"], "0412 345 679")
         self.assertEqual(f["Position Recruiting For"], "Restaurant Manager")
         self.assertEqual(f["Employment Type"], ["Full Time", "Casual"])
         self.assertEqual(f["Number of Vacancies"], "2-5")

@@ -250,3 +250,65 @@
     if (left <= 0) { clearInterval(timer); window.location.href = url; }
   }, 1000);
 })();
+
+/* Contact number and email checks as people fill in a form (the server checks again, more strictly:
+   core/validators.py, which also checks the email domain can receive email). Shown when leaving a box,
+   then updated while typing until it's fixed. */
+(function () {
+  var TYPOS = {"gmial.com": "gmail.com", "gmai.com": "gmail.com", "gmal.com": "gmail.com", "gamil.com": "gmail.com",
+    "gmail.co": "gmail.com", "gmail.con": "gmail.com", "gmail.cm": "gmail.com", "gnail.com": "gmail.com",
+    "gmail.om": "gmail.com", "gmaill.com": "gmail.com", "hotmial.com": "hotmail.com", "hotmal.com": "hotmail.com",
+    "hotmail.con": "hotmail.com", "hotmail.co": "hotmail.com", "outlok.com": "outlook.com",
+    "outlook.con": "outlook.com", "yaho.com": "yahoo.com", "yahooo.com": "yahoo.com", "yahoo.con": "yahoo.com",
+    "icloud.con": "icloud.com", "iclod.com": "icloud.com", "bigpond.con": "bigpond.com"};
+  var EMAIL_RE = /^(?!.*\.\.)[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/;
+  var PHONE_HELP = "Enter an Australian number such as 0412 345 678 or 08 9200 1234, or an overseas number starting with + and the country code.";
+
+  function phoneError(raw) {
+    raw = raw.trim();
+    if (!raw) return "";
+    if (!/^[+()\d\s.-]+$/.test(raw)) return "Use numbers only. " + PHONE_HELP;
+    var d = raw.replace(/\D/g, ""), intl = /^(\+|00)/.test(raw);
+    if (raw.indexOf("00") === 0) d = d.slice(2);
+    if (intl && d.indexOf("61") === 0) { d = "0" + d.slice(2).replace(/^0/, ""); intl = false; }
+    if (!intl) {
+      if (/^04\d{8}$/.test(d) || /^0[2378]\d{8}$/.test(d) || /^1[38]00\d{6}$/.test(d)) {
+        return /^(\d)\1+$/.test(d.slice(2)) ? "That number doesn't look real. " + PHONE_HELP : "";
+      }
+      return d.indexOf("04") === 0 ? "Australian mobile numbers have 10 digits, for example 0412 345 678." : PHONE_HELP;
+    }
+    return /^[1-9]\d{7,14}$/.test(d) ? "" : PHONE_HELP;
+  }
+  function emailError(raw) {
+    var e = raw.trim().toLowerCase();
+    if (!e) return "";
+    if (e.length > 254 || !EMAIL_RE.test(e)) return "Enter a valid email address, for example name@gmail.com.";
+    var at = e.lastIndexOf("@"), domain = e.slice(at + 1);
+    if (TYPOS[domain]) return "Did you mean " + e.slice(0, at) + "@" + TYPOS[domain] + "? Please check the email address.";
+    return "";
+  }
+  function show(input, message) {
+    var field = input.closest(".field");
+    if (!field) return;
+    var p = field.querySelector(".field__error.js-check");
+    if (message) {
+      if (!p) { p = document.createElement("p"); p.className = "field__error js-check"; p.id = input.id + "_check"; field.appendChild(p); }
+      p.textContent = message;
+      field.querySelectorAll(".field__error:not(.js-check)").forEach(function (old) { old.hidden = true; });
+      field.classList.add("field--error");
+      input.setAttribute("aria-invalid", "true");
+      input.setAttribute("aria-describedby", p.id);
+    } else {
+      if (p) p.remove();
+      field.querySelectorAll(".field__error").forEach(function (old) { old.hidden = true; });
+      field.classList.remove("field--error");
+      input.removeAttribute("aria-invalid");
+      input.removeAttribute("aria-describedby");
+    }
+  }
+  document.querySelectorAll('form input[autocomplete="tel"], form input[autocomplete="email"]').forEach(function (input) {
+    var check = input.getAttribute("autocomplete") === "tel" ? phoneError : emailError, touched = false;
+    input.addEventListener("blur", function () { touched = true; show(input, check(input.value)); });
+    input.addEventListener("input", function () { if (touched) show(input, check(input.value)); });
+  });
+})();

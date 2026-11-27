@@ -21,7 +21,7 @@ def tearDownModule():
 
 
 def make_candidate(**kw):
-    data = dict(full_name="Jane Citizen", email="j@example.com", phone="0400000000", location="Perth WA",
+    data = dict(full_name="Jane Citizen", email="j@example.com", phone="0412345670", location="Perth WA",
                 position_sought="=HYPERLINK(\"x\")", industry="Hospitality & Tourism", experience="1–3 Years",
                 support_jobs=True, support_resume=True, consent=True)
     data.update(kw)
@@ -35,7 +35,7 @@ class AdminTests(TestCase):
         self.admin = User.objects.create_superuser("boss", "boss@example.com", "a-strong-pass-123")
         self.staff = User.objects.create_user("helper", "h@example.com", "a-strong-pass-123", is_staff=True)
         self.cand = make_candidate()
-        VacancyEnquiry.objects.create(contact_name="Sam", company="Cafe Co", email="s@example.com", phone="0411111111",
+        VacancyEnquiry.objects.create(contact_name="Sam", company="Cafe Co", email="s@example.com", phone="0412345671",
                                       industry="Hospitality", position="Head Chef", employment_types=["Full Time"],
                                       location="Perth")
         ContactEnquiry.objects.create(name="Alex", email="a@example.com", message="Hello", enquirer_type="other")
@@ -169,7 +169,7 @@ class FollowUpTests(TestCase):
         self.staff = User.objects.create_user("helper", "h@example.com", "a-strong-pass-123", is_staff=True,
                                               first_name="Pema")
         self.staff.groups.add(Group.objects.get(name="Staff"))
-        self.e = make_candidate(phone="0400 000 000", position_sought="Original position")
+        self.e = make_candidate(phone="0412 345 678", position_sought="Original position")
         self.url = reverse("admin:core_candidateregistration_change", args=[self.e.pk])
 
     def post_change(self, **extra):
@@ -201,7 +201,7 @@ class FollowUpTests(TestCase):
         r = self.client.get(self.url)
         self.assertNotContains(r, 'name="full_name"')
         self.assertContains(r, 'name="notes"')
-        self.assertContains(r, 'href="tel:0400000000"')
+        self.assertContains(r, 'href="tel:0412345678"')
         self.assertContains(r, "Not provided")
 
     def test_no_add_and_only_admins_delete(self):
@@ -269,7 +269,7 @@ class RecordPageTests(TestCase):
         from django.test import override_settings
         from core.models import ContactEnquiry
         boss = User.objects.create_superuser("recboss", "rb@example.com", "a-strong-pass-123")
-        e = ContactEnquiry.objects.create(name="Sam Lee", email="sam@example.com", phone="0400 111 222", message="Hi")
+        e = ContactEnquiry.objects.create(name="Sam Lee", email="sam@example.com", phone="0412 111 222", message="Hi")
         self.client.force_login(boss)
         with override_settings(STORAGES={
                 "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
@@ -278,7 +278,7 @@ class RecordPageTests(TestCase):
             r = self.client.get(url)
             self.assertContains(r, 'class="rec-head"')
             self.assertContains(r, 'href="mailto:sam@example.com"')
-            self.assertContains(r, 'href="tel:0400111222"')
+            self.assertContains(r, 'href="tel:0412111222"')
             r = self.client.post(url, {"status": "contacted", "assigned_to": boss.pk, "notes": "Called back",
                                        "_continue": "1"})
             self.assertRedirects(r, url)
@@ -292,7 +292,7 @@ class FilterBarTests(TestCase):
     def setUp(self):
         self.boss = User.objects.create_superuser("fbboss", "fb@example.com", "a-strong-pass-123")
         self.client.force_login(self.boss)
-        base = dict(phone="0400 000 000", location="Perth", visa_type="Australian Citizen", consent=True,
+        base = dict(phone="0412 345 678", location="Perth", visa_type="Australian Citizen", consent=True,
                     preferred_location="Perth Metro", position_sought="Carer", experience="1–3 Years",
                     employment_types=["Full - Time"])
         CandidateRegistration.objects.create(full_name="Amy New", email="a@example.com", industry="Healthcare & Nursing",

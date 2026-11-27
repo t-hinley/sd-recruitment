@@ -166,6 +166,8 @@ AUTHENTICATION_BACKENDS = ["core.auth_backends.UsernameOrEmailBackend"]
 # Two-step admin sign-in with an authenticator app (core/two_step.py). True = every sign-in needs a code.
 ADMIN_TWO_FACTOR = env_bool("ADMIN_TWO_FACTOR", False)
 LOGIN_REDIRECT_URL = "admin:index"
+# Website forms: check that an email address's domain can receive email (quick DNS lookup). Off in tests.
+EMAIL_DOMAIN_CHECK = env_bool("EMAIL_DOMAIN_CHECK", True) and not (len(sys.argv) > 1 and sys.argv[1] == "test")
 # Public forms: successful submissions allowed per hour from one connection (each form counted separately).
 FORM_LIMIT_PER_HOUR = int(os.environ.get("FORM_LIMIT_PER_HOUR", "10"))
 if len(sys.argv) > 1 and sys.argv[1] == "test":
