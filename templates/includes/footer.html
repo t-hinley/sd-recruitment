@@ -4,9 +4,13 @@
     <div class="site-footer__brand">
       <img src="{% static 'images/logo.png' %}" alt="{{ business.name }}" width="843" height="168" loading="lazy">
       <p>Connecting businesses with capable people, and helping candidates take the next step in their careers.</p>
-      {% if linkedin_url %}<a class="footer-social" href="{{ linkedin_url }}" target="_blank" rel="noopener"><svg class="icon"><use href="#i-linkedin"/></svg> Follow us on LinkedIn</a>{% endif %}
+      <div class="footer-quick">
+        {% if business.phone_display %}<a href="tel:{{ business.phone_tel }}"><span><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg></span><span><small>Call us</small>{{ business.phone_display }}</span></a>{% endif %}
+        {% if business.email %}<a href="mailto:{{ business.email }}"><span><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg></span><span><small>Email us</small>{{ business.email }}</span></a>{% endif %}
+      </div>
+      {% if linkedin_url %}<a class="footer-social" href="{{ linkedin_url }}" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-linkedin"/></svg> Follow us on LinkedIn</a>{% endif %}
     </div>
-    <div>
+    <nav aria-label="Pages">
       <h2 class="site-footer__title">Pages</h2>
       <ul class="site-footer__list">
         <li><a href="{% url 'core:home' %}">Home</a></li>
@@ -15,8 +19,8 @@
         <li><a href="{% url 'core:candidates' %}">Candidates</a></li>
         <li><a href="{% url 'core:contact' %}">Contact Us</a></li>
       </ul>
-    </div>
-    <div>
+    </nav>
+    <nav aria-label="Get started">
       <h2 class="site-footer__title">Get started</h2>
       <ul class="site-footer__list">
         <li><a href="{% url 'core:employers' %}#vacancy">Submit a vacancy</a></li>
@@ -26,22 +30,20 @@
         <li><a href="{% url 'core:career_services' %}#interview">Interview preparation</a></li>
         <li><a href="{% url 'core:career_services' %}#counselling">Career counselling</a></li>
       </ul>
-    </div>
+    </nav>
     <div>
-      <h2 class="site-footer__title">Contact</h2>
+      <h2 class="site-footer__title">Visit us</h2>
       <ul class="site-footer__contact">
-        {% if business.phone_display %}<li><svg class="icon"><use href="#i-phone"/></svg><a href="tel:{{ business.phone_tel }}">{{ business.phone_display }}</a></li>{% endif %}
-        {% if business.email %}<li><svg class="icon"><use href="#i-mail"/></svg><a href="mailto:{{ business.email }}">{{ business.email }}</a></li>{% endif %}
-        {% if business.address %}<li><svg class="icon"><use href="#i-pin"/></svg><span>{{ business.address }}</span></li>{% endif %}
-        {% if business.hours %}<li><svg class="icon"><use href="#i-clock"/></svg><span>{{ business.hours }}</span></li>{% endif %}
-        <li><svg class="icon"><use href="#i-chat"/></svg><a href="{% url 'core:contact' %}#enquiry">Send us a message</a></li>
+        {% if business.address %}<li><span class="site-footer__ic"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg></span><span><small>Office</small>{{ business.address }}</span></li>{% endif %}
+        {% if business.hours %}<li><span class="site-footer__ic"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></span><span><small>Opening hours</small>{{ business.hours }}</span></li>{% endif %}
       </ul>
+      <a class="btn btn--blue site-footer__cta" href="{% url 'core:contact' %}#enquiry"><svg class="icon" aria-hidden="true"><use href="#i-chat"/></svg> Send us a message</a>
     </div>
   </div>
   <div class="site-footer__bottom">
     <div class="container site-footer__bottom-inner">
-      <span>&copy; {% now "Y" %} {{ business.name }}. All rights reserved. &middot; <a href="{% url 'core:privacy' %}">Privacy Policy</a></span>
-      <span class="site-footer__tag">{{ business.tagline }}</span>
+      <span>&copy; {% now "Y" %} {{ business.name }}. All rights reserved.</span>
+      <span class="site-footer__bottom-links"><a href="{% url 'core:privacy' %}">Privacy Policy</a><span class="site-footer__tag">{{ business.tagline }}</span></span>
     </div>
   </div>
 </footer>
