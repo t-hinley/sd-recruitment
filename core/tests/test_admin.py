@@ -322,3 +322,54 @@ class FilterBarTests(TestCase):
         self.assertNotContains(r, 'class="fb-chip"')
         r = self.client.get(self.url + "?q=Amy")
         self.assertContains(r, "Search: Amy")
+
+
+@override_settings(STORAGES={"default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+                             "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}})
+class AutoAssignOnStatusTests(TestCase):
+    def setUp(self):
+        self.sam = User.objects.create_user("samx", "samx@example.com", "a-strong-pass-123", is_staff=True)
+        self.sam.groups.add(Group.objects.get(name="Staff"))
+        self.other = User.objects.create_user("otherx", "o@example.com", "a-strong-pass-123", is_staff=True)
+        self.client.force_login(self.sam)
+
+    def enquiry(self, **kw):
+        return ContactEnquiry.objects.create(name="Ann", email="ann@example.com", message="Hi", **kw)
+
+    def post_change(self, e, **data):
+        url = reverse("admin:core_contactenquiry_change", args=[e.pk])
+        return self.client.post(url, {"status": e.status, "assigned_to": e.assigned_to_id or "", "notes": e.notes,
+                                      "_continue": "1", **data})
+
+    def test_changing_status_assigns_unassigned_to_you(self):
+        e = self.enquiry()
+        self.post_change(e, status="contacted")
+        e.refresh_from_db()
+        self.assertEqual((e.status, e.assigned_to), ("contacted", self.sam))
+
+    def test_owner_and_explicit_choice_are_kept(self):
+        e = self.enquiry(assigned_to=self.other)
+        self.post_change(e, status="contacted")
+        e.refresh_from_db()
+        self.assertEqual(e.assigned_to, self.other)          # someone else's stays theirs
+        e2 = self.enquiry()
+        self.post_change(e2, status="contacted", assigned_to=str(self.other.pk))
+        e2.refresh_from_db()
+        self.assertEqual(e2.assigned_to, self.other)         # picking a person wins
+        e3 = self.enquiry()
+        self.post_change(e3, notes="Just a note")            # no status change: no assignment
+        e3.refresh_from_db()
+        self.assertIsNone(e3.assigned_to)
+
+    def test_list_dropdown_and_bulk_action(self):
+        e = self.enquiry()
+        url = reverse("admin:core_contactenquiry_changelist")
+        self.client.post(url, {"form-TOTAL_FORMS": "1", "form-INITIAL_FORMS": "1", "form-0-id": str(e.pk),
+                               "form-0-status": "contacted", "_save": "Save"})
+        e.refresh_from_db()
+        self.assertEqual((e.status, e.assigned_to), ("contacted", self.sam))
+        a, b = self.enquiry(), self.enquiry(assigned_to=self.other)
+        self.client.post(url, {"action": "mark_closed", "_selected_action": [a.pk, b.pk]})
+        a.refresh_from_db(); b.refresh_from_db()
+        self.assertEqual((a.status, a.assigned_to), ("closed", self.sam))
+        self.assertEqual((b.status, b.assigned_to), ("closed", self.other))

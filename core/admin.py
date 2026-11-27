@@ -212,15 +212,34 @@ class EnquiryAdmin(FilterBarMixin, admin.ModelAdmin):
         n = queryset.update(assigned_to=request.user, updated_at=timezone.now())
         self.message_user(request, f"{n} assigned to you.", messages.SUCCESS)
 
+    def save_model(self, request, obj, form, change):
+        """Changing the status of an unassigned enquiry makes you its owner (record page and list dropdown).
+        An enquiry someone else already owns keeps its owner; choosing a person in 'Assigned to' wins."""
+        if (change and "status" in form.changed_data and not obj.assigned_to_id
+                and "assigned_to" not in form.changed_data):
+            obj.assigned_to = request.user
+            self.message_user(request, f"“{obj}” is now assigned to you, because you changed its status.",
+                              messages.INFO)
+        super().save_model(request, obj, form, change)
+
+    @staticmethod
+    def _claim_unassigned(request, queryset):
+        """Bulk status changes: unassigned enquiries in the selection become yours."""
+        return queryset.filter(assigned_to__isnull=True).update(assigned_to=request.user)
+
     @admin.action(description="Mark selected as Contacted")
     def mark_contacted(self, request, queryset):
+        claimed = self._claim_unassigned(request, queryset)
         n = queryset.update(status="contacted", updated_at=timezone.now())
-        self.message_user(request, f"{n} marked as Contacted.", messages.SUCCESS)
+        self.message_user(request, f"{n} marked as Contacted." + (f" {claimed} that had no owner are now assigned to you."
+                                                               if claimed else ""), messages.SUCCESS)
 
     @admin.action(description="Mark selected as Closed")
     def mark_closed(self, request, queryset):
+        claimed = self._claim_unassigned(request, queryset)
         n = queryset.update(status="closed", updated_at=timezone.now())
-        self.message_user(request, f"{n} marked as Closed.", messages.SUCCESS)
+        self.message_user(request, f"{n} marked as Closed." + (f" {claimed} that had no owner are now assigned to you."
+                                                               if claimed else ""), messages.SUCCESS)
 
     def get_actions(self, request):
         actions = super().get_actions(request)
